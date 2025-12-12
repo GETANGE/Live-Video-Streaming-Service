@@ -1,5 +1,5 @@
 import { Server as HTTPServer } from "http";
-import logger from "../utils/logger";
+import logger from "@utils/logger";
 import { Server as IOServer, Socket } from "socket.io";
 
 
