@@ -1,0 +1,166 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.5 Chrome/138.0.7204.251 Electron/37.6.1 Safari/537.36" version="28.2.5">
+  <diagram name="Page-1" id="gan5UVnQrdjp0d3Kv7rX">
+    <mxGraphModel dx="1665" dy="848" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-11" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;Main User Groups&lt;/span&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-12" value="Broadcasters : Users streaming video( via mobile / web)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="wgv9zeEpP68T3f-pw_0r-11">
+          <mxGeometry y="30" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-13" value="Viewers: Users watching the livestream and interacting via chat" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="wgv9zeEpP68T3f-pw_0r-11">
+          <mxGeometry y="60" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-15" value="&lt;span style=&quot;text-wrap-mode: nowrap;&quot;&gt;Scope&lt;/span&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-16" value="We will focus on the Live Vidoe pipeline: INgestion (RMTP), transcoding and Delivery(HLS/DASH)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="wgv9zeEpP68T3f-pw_0r-15">
+          <mxGeometry y="30" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-19" value="We will include basic Live chat and real-time Viewer Counts" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="wgv9zeEpP68T3f-pw_0r-15">
+          <mxGeometry y="60" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-20" value="List" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-21" value="Vidoe on demand(VOD) playback after the live event ends" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="wgv9zeEpP68T3f-pw_0r-20">
+          <mxGeometry y="30" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-22" value="Monetization(Ads, Super Chats)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="wgv9zeEpP68T3f-pw_0r-20">
+          <mxGeometry y="60" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-23" value="Complex recommendation algorithms" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="wgv9zeEpP68T3f-pw_0r-20">
+          <mxGeometry y="90" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-24" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="120" width="240" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-26" value="" style="html=1;strokeWidth=1;shadow=0;dashed=0;shape=mxgraph.ios7.misc.broadcast;fillColor=#4CDA64;strokeColor=none;buttonText=;strokeColor2=#222222;fontColor=#222222;fontSize=8;verticalLabelPosition=bottom;verticalAlign=top;align=center;sketch=0;" vertex="1" parent="1">
+          <mxGeometry x="410" y="134" width="55" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-27" value="Broadcasters&lt;div&gt;&lt;br&gt;&lt;div&gt;Stream video (mobile,desktop/OBS)&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="410" y="210" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-28" value="" style="verticalLabelPosition=bottom;sketch=0;html=1;fillColor=#282828;strokeColor=none;verticalAlign=top;pointerEvents=1;align=center;shape=mxgraph.cisco_safe.people_places_things_icons.icon1;" vertex="1" parent="1">
+          <mxGeometry x="416.75" y="330" width="46.5" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-30" value="Viewers&lt;div&gt;&lt;br&gt;&lt;div&gt;Watch live stream, interact via chat&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="382.5" y="400" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-31" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="120" width="560" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-32" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="160" width="150" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-33" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.opensearch_ingestion;" vertex="1" parent="1">
+          <mxGeometry x="730" y="170" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-34" value="Ingestion&lt;div&gt;(RMPT)&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="725" y="220" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-36" value="Transcoding" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="160" width="130" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-37" value="Delivery&lt;div&gt;(HLS/DASH)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="160" width="130" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-39" value="Live Chat &amp;amp;&lt;div&gt;Real-time&lt;/div&gt;&lt;div&gt;Viewer Counts&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="350" width="130" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-40" value="" style="endArrow=classic;html=1;rounded=0;exitX=1.008;exitY=0.2;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.002;entryY=0.2;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="wgv9zeEpP68T3f-pw_0r-24" target="wgv9zeEpP68T3f-pw_0r-31">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="840" y="490" as="sourcePoint" />
+            <mxPoint x="620" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-41" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.009;exitY=0.89;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1.004;entryY=0.89;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="wgv9zeEpP68T3f-pw_0r-31" target="wgv9zeEpP68T3f-pw_0r-24">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="840" y="490" as="sourcePoint" />
+            <mxPoint x="890" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-42" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="120" width="240" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-43" value="Out of Scope" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1375" y="80" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-44" value="Video on Demand&lt;div&gt;(VOD)&lt;/div&gt;&lt;div&gt;playback after live event ends.&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="160" width="120" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-45" value="Monetization&lt;div&gt;(Ads, Super Chats)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="290" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-46" value="Complex Recommendations&lt;div&gt;Advanced algorithms&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="420" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-48" value="Functional Requirements" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="600" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-49" value="Broadcasting: Users can start a live stream using a unique stream key" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="630" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-52" value="Playback: Viewers can switch streams with acceptable latency (10-30 seconds) and minimal buffering" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="660" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-54" value="Adaptive Bitrate (ABR): The system automatically serves different qualities( e.g, 360p, 720p, 1080p) based on the viewer&#39;s internet speed" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="65" y="690" width="455" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-55" value="Recording: The stream is automatically saved for later viewing once it ends" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="720" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-56" value="Chat: Viewers can send and receive messages in real-time" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="750" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-57" value="Nice to have" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="565" y="608" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-59" value="Viewer Count: Real-time counter of concurrent viewers" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="510" y="638" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-60" value="Reaction Overlays: Floating hearts or likes on the video" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="510" y="670" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-61" value="Non functional requirements" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="990" y="618" width="170" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-62" value="Scale" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="648" width="50" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-63" value="DAU: 50 million" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="678" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-64" value="Peak Concurrent Viewers: 5 million" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="708" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-65" value="Peak Concurrent Broadcasters: 50000" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="738" width="230" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-66" value="Single Stream Peak: Up to 1 million viewers on a single viral stream" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="768" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-67" value="Latency" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="830" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-68" value="Targeting 10-30 seconds ( Standard HLS)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1025" y="860" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-69" value="Availabitlity: 99.99 % Streams should not drop during broadcast" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1025" y="890" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-71" value="Read/Write Ratio: Extremely read-heavy.(1 broadcaster writes : 100000 viewers read )" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1025" y="920" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="wgv9zeEpP68T3f-pw_0r-72" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="wgv9zeEpP68T3f-pw_0r-31" target="wgv9zeEpP68T3f-pw_0r-36">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="910" y="510" as="sourcePoint" />
+            <mxPoint x="960" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

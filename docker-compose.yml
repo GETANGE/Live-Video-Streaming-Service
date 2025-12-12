@@ -1,0 +1,62 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: redis-streaming
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - live-video-streaming-service
+    volumes:
+      - redis_data:/data
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_load_balancer
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    networks:
+      - live-video-streaming-service
+    healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+  
+  
+  postgres:
+    image: postgres:18
+    container_name: postgres-streaming
+    environment:
+      POSTGRES_USER: streaming_user
+      POSTGRES_PASSWORD: streaming_password
+      POSTGRES_DB: streaming_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - live-video-streaming-service
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "streaming_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  live-video-streaming-service:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:
