@@ -5,12 +5,11 @@ import logger from "@utils/logger";
 dotenv.config();
 
 const redisUrl =
-    process.env.NODE_ENV === "production"
-        ? process.env.REDIS_URL
-        : process.env.REDIS_URL_DEV;
+  process.env.NODE_ENV === "production"
+    ? process.env.REDIS_URL
+    : process.env.REDIS_URL_DEV;
 
 const redisClient = new Redis(redisUrl as string);
-
 
 redisClient.on("error", (error) => {
   logger.warn(`Error connecting to redis`, error);

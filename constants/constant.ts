@@ -8,7 +8,7 @@ const RabbitMQConfig = {
   queueName: "streaming_queue",
   exchangeName: "streaming_exchange",
   routingKey: "streaming_routing_key",
-  maxPriority: 10
+  maxPriority: 10,
 };
 
 export default RabbitMQConfig;

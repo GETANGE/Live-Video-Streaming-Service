@@ -2,9 +2,8 @@ import logger from "@utils/logger";
 import RabbitMQConfig from "@constants/constant";
 import amqplib from "amqplib";
 
-
-let connection:  null | any = null;
-let channel:  null | any = null;
+let connection: null | any = null;
+let channel: null | any = null;
 
 export const getRabbitMQChannel = async (): Promise<any> => {
   if (channel) return channel;
@@ -14,16 +13,23 @@ export const getRabbitMQChannel = async (): Promise<any> => {
 
   await channel.prefetch(1);
 
-  await channel.assertExchange(RabbitMQConfig.exchangeName, "direct", { durable: true });
+  await channel.assertExchange(RabbitMQConfig.exchangeName, "direct", {
+    durable: true,
+  });
 
   // Durable priority queue
-  await channel.assertQueue( RabbitMQConfig.queueName,{ durable: true, arguments: {
-        "x-max-priority": RabbitMQConfig.maxPriority
-      }
-    }
-  );
+  await channel.assertQueue(RabbitMQConfig.queueName, {
+    durable: true,
+    arguments: {
+      "x-max-priority": RabbitMQConfig.maxPriority,
+    },
+  });
 
-  await channel.bindQueue(RabbitMQConfig.queueName, RabbitMQConfig.exchangeName, RabbitMQConfig.routingKey );
+  await channel.bindQueue(
+    RabbitMQConfig.queueName,
+    RabbitMQConfig.exchangeName,
+    RabbitMQConfig.routingKey,
+  );
 
   return channel;
 };
