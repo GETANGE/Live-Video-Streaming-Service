@@ -2,7 +2,7 @@
   "compilerOptions": {
     "lib": ["ESNext"],
     "target": "ESNext",
-    "module": "Preserve",
+    "module": "ESNext",
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
@@ -11,7 +11,6 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-
     "baseUrl": ".",
     "paths": {
       "@generated/*": ["generated/*"],
@@ -24,7 +23,7 @@
       "@services/*": ["services/*"],
       "@utils/*": ["utils/*"],
       "@events/*": ["events/*"],
-      "@types/*": ["types/*"],
+      "@types": ["types/express.d.ts"],
       "@prisma/*": ["prisma/*"]
     },
 
@@ -37,5 +36,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  "include": ["types", "*.ts", "**/*.ts"]
 }

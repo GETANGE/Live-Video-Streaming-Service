@@ -6,8 +6,9 @@ import express, {
 import helmet from "helmet";
 import dotenv from "dotenv";
 import morgan from "morgan";
+import passport from "passport";
 import cors from "cors";
-import redisClient from "@configs/redis.config"
+import redisClient from "@configs/redis.config";
 import rateLimit from "express-rate-limit";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import RedisStore from "rate-limit-redis";
@@ -19,14 +20,16 @@ import APIError from "@utils/APIError";
 import ErrorHandlers from "@middleware/error.middleware";
 import { attachRedis } from "@middleware/attatchRedis";
 import { initSocket } from "@configs/socket.config";
+import { connectToRabbitMq } from "@configs/rabbitMQ.config";
 
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.AUTH_PORT) || 3006;
+const PORT = Number(process.env.PORT) || 8040;
 
 app.use(helmet());
 app.use(express.json());
+app.use(passport.initialize());
 app.use(morgan("dev"));
 app.use(cors(corsOptions));
 
@@ -94,10 +97,16 @@ initSocket(server);
 async function startServer() {
   try {
     await connectToDatabase();
+    await connectToRabbitMq();
 
-    logger.info(`📽️ Live-Video-Streaming-Service fully initialized on port ${PORT}`);
+    logger.info(
+      `📽️ Live-Video-Streaming-Service fully initialized on port ${PORT}`,
+    );
   } catch (error: any) {
-    logger.error("🔥 Failed to initialize Live-Video-Streaming-Service:", error);
+    logger.error(
+      "🔥 Failed to initialize Live-Video-Streaming-Service:",
+      error,
+    );
     process.exit(1);
   }
 }

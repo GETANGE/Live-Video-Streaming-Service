@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -11,4 +5,168 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// Enums
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum NotificationType {
+  INFO
+  ALERT
+  WARNING
+}
+
+// Users
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  devices       UserDevice[]
+  transactions  Transaction[]
+  payments      Payment[]
+  videos        Video[]
+  notifications Notification[]
+
+  @@index([createdAt])
+}
+
+// Videos (metadata only)
+model Video {
+  id              String   @id @default(uuid())
+  title           String
+  description     String?
+  duration        Int // in seconds
+  uploadedBy      String? // optional relation to User id
+  mongoManifestId String? // reference to MongoDB manifest/document
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User? @relation(fields: [uploadedBy], references: [id])
+
+  @@index([title])
+  @@index([uploadedBy])
+  @@index([createdAt])
+  @@index([title, description])
+}
+
+// Data sources (e.g., payment or analytics)
+model DataSource {
+  id        String   @id @default(uuid())
+  name      String
+  type      String // e.g., "payment", "video", "analytics"
+  apiKey    String?
+  secretKey String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([type])
+}
+
+// Transactions
+model Transaction {
+  id            String            @id @default(uuid())
+  amount        Float
+  status        TransactionStatus @default(PENDING)
+  transactionId String?           @unique
+  userId        String
+  paymentId     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user    User?    @relation(fields: [userId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Payments
+model Payment {
+  id            String        @id @default(uuid())
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @unique
+  userId        String
+  method        String // e.g., "card", "mobile_money", "wallet"
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([method])
+  @@index([createdAt])
+}
+
+// Notifications
+model Notification {
+  id        String           @id @default(uuid())
+  message   String
+  type      NotificationType
+  userId    String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([message])
+}
+
+// Devices
+model Device {
+  id        String   @id @default(uuid())
+  name      String
+  type      String // e.g., "mobile", "tablet", "desktop"
+  platform  String? // optional platform info
+  osVersion String? // optional OS version
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users UserDevice[]
+
+  @@index([type])
+  @@index([platform])
+  @@index([createdAt])
+}
+
+// User-Device mapping
+model UserDevice {
+  id        String   @id @default(uuid())
+  userId    String
+  deviceId  String
+  lastUsed  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  device Device @relation(fields: [deviceId], references: [id])
+
+  @@unique([userId, deviceId])
+  @@index([lastUsed])
+  @@index([createdAt])
 }

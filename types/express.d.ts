@@ -8,4 +8,9 @@ declare global {
   }
 }
 
+export interface TokenPayload {
+  id: string;
+  email: string;
+}
+
 export {};
