@@ -11,4 +11,11 @@ const RabbitMQConfig = {
   maxPriority: 10,
 };
 
+export const PRIORITY = {
+  HIGH: 9,
+  MEDIUM: 5,
+  LOW: 1,
+} as const;
+
+
 export default RabbitMQConfig;
