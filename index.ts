@@ -21,6 +21,7 @@ import ErrorHandlers from "@middleware/error.middleware";
 import { attachRedis } from "@middleware/attatchRedis";
 import { initSocket } from "@configs/socket.config";
 import { connectToRabbitMq } from "@configs/rabbitMQ.config";
+import { consumeMessage } from "@events/consumers/streaming.consumer";
 
 dotenv.config();
 
@@ -98,6 +99,7 @@ async function startServer() {
   try {
     await connectToDatabase();
     await connectToRabbitMq();
+    await consumeMessage();
 
     logger.info(
       `📽️ Live-Video-Streaming-Service fully initialized on port ${PORT}`,
