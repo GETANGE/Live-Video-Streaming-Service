@@ -23,6 +23,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
     "amqplib": "^0.10.9",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

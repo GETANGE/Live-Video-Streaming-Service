@@ -33,7 +33,10 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   username  String   @unique
+  phoneNumber String?
   imageUrl  String?
+  isActive  Boolean  @default(true)
+  isAdmin   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -18,15 +18,20 @@ import { corsOptions } from "@configs/cors.config";
 
 import APIError from "@utils/APIError";
 import ErrorHandlers from "@middleware/error.middleware";
+
+import authRoutes from "@routes/user.route";
 import { attachRedis } from "@middleware/attatchRedis";
 import { initSocket } from "@configs/socket.config";
 import { connectToRabbitMq } from "@configs/rabbitMQ.config";
 import { consumeMessage } from "@events/consumers/streaming.consumer";
+import { googleStrategy } from "@services/user.service";
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8040;
+
+googleStrategy();
 
 app.use(helmet());
 app.use(express.json());
@@ -80,7 +85,7 @@ app.get("/health", (req: Request, res: Response) => {
   });
 });
 
-app.use("/api/v1/auth", attachRedis(redisClient));
+app.use("/api/v1/auth", attachRedis(redisClient), authRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new APIError(`Route ${req.originalUrl} not found`, 404));

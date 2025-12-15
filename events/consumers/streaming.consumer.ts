@@ -1,12 +1,10 @@
 import { getRabbitMQChannel } from "@configs/rabbitMQ.config";
+import { handleUserProfileUpdate } from "./eventHandlers/user_handlers/update_profile";
 import RabbitMQConfig from "@constants/constant";
 import logger from "@utils/logger";
 
 const allowedEventTypes = new Set([
-  "VIDEO_TRANSCODE",
-  "STREAM_STARTED",
-  "STREAM_ENDED",
-  "NOTIFY_VIEWERS",
+  "USER_PROFILE_UPDATE",
 ]);
 
 const MAX_RETRIES = 3;
@@ -39,34 +37,15 @@ export const consumeMessage = async () => {
 
       try {
         switch (data.eventType) {
-          // case "VIDEO_TRANSCODE":
-          //   await handleVideoTranscode(data.payload);
-          //   break;
-
-          // case "STREAM_STARTED":
-          //   await handleStreamStarted(data.payload);
-          //   break;
-
-          // case "STREAM_ENDED":
-          //   await handleStreamEnded(data.payload);
-          //   break;
-
-          // case "NOTIFY_VIEWERS":
-          //   await handleNotifyViewers(data.payload);
-          //   break;
+          case "USER_PROFILE_UPDATE":
+            await handleUserProfileUpdate(data.payload);
+            break;
         }
 
         channel.ack(msg);
       } catch (err) {
-        console.error("❌ Message processing failed:", err);
-
-        if (retries >= MAX_RETRIES) {
-          // Permanent failure → DLQ / discard
-          channel.nack(msg, false, false);
-        } else {
-          // Requeue with retry count
-          channel.nack(msg, false, true);
-        }
+        logger.error("Message processing failed, discarding:", err);
+        channel.nack(msg, false, false);
       }
     },
     {

@@ -16,7 +16,7 @@ export const publishMessage = async (payload: any) => {
       headers: {
         "x-retries": 0,
       },
-      priority: payload.priority ?? 0,
+      priority: payload.priority,
       contentType: "application/json",
     }
   );
