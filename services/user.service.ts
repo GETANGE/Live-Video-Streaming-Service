@@ -1,7 +1,10 @@
 import passport from "passport";
 import dotenv from "dotenv";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { createUser, getUserByEmail_OAuth } from "@repository/users.repository";
+import * as repo from "@repository/users.repository";
+import redisClient from "@configs/redis.config";
+import { invalidateUserCache } from "helpers/cacheInvalidations/userCacheInvalidate";
+import { getUserCacheKeys } from "helpers/cacheInvalidations/userCacheInvalidate";
 import APIError from "@utils/APIError";
 
 dotenv.config();
@@ -21,13 +24,14 @@ export const googleStrategy = () => {
         done,
       ) => {
         try {
-          const imageUrl = profile.photos?.[0]?.value;
+          const imageUrl = profile.photos[0].value;
           const googleId = profile.id;
-          const email = profile.emails?.[0]?.value;
-          let username = profile.name.givenName && profile.name.familyName
-            ? `${profile.name.givenName} ${profile.name.familyName}`
-            : email.split("@")[0];
-          
+          const email = profile.emails[0].value;
+          let username =
+            profile.name.givenName && profile.name.familyName
+              ? `${profile.name.givenName} ${profile.name.familyName}`
+              : email.split("@")[0];
+
           // Fallback just in case
           if (!username) username = `user_${googleId}`;
 
@@ -36,11 +40,11 @@ export const googleStrategy = () => {
           }
 
           // Check if user already exists
-          let user = await getUserByEmail_OAuth(email);
+          let user = await repo.getUserByEmailRepo(email);
 
           // If not, create user
           if (!user) {
-            user = await createUser({
+            user = await repo.createUserRepo({
               email,
               username: username,
               imageUrl,
@@ -56,4 +60,51 @@ export const googleStrategy = () => {
       },
     ),
   );
+};
+
+// Centralized cache helper
+const getCachedUser = async (cacheKey: string, dbCall: () => Promise<any>) => {
+  const cached = await redisClient.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  const result = await dbCall();
+  if (!result) return null;
+
+  await redisClient.setex(cacheKey, 300, JSON.stringify(result));
+  return result;
+};
+
+export const createUserService = async (data: any) => {
+  const user = await repo.createUserRepo(data);
+  await invalidateUserCache();
+  return user;
+};
+
+export const getUserByIdService = async (id: string) => {
+  const keys = await getUserCacheKeys();
+  return getCachedUser(keys.byId(id), () => repo.getUserByIdRepo(id));
+};
+
+export const getUserByEmailService = async (email: string) => {
+  const keys = await getUserCacheKeys();
+  return getCachedUser(keys.byEmail(email), () =>
+    repo.getUserByEmailRepo(email),
+  );
+};
+
+export const getAllUsersService = async () => {
+  const keys = await getUserCacheKeys();
+  return getCachedUser(keys.all(), () => repo.getAllUsersRepo());
+};
+
+export const updateUserService = async (id: string, data: any) => {
+  const updated = await repo.updateUserRepo(id, data);
+  await invalidateUserCache();
+  return updated;
+};
+
+export const deleteUserService = async (id: string) => {
+  const deleted = await repo.deleteUserRepo(id);
+  await invalidateUserCache();
+  return deleted;
 };

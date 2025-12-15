@@ -1,9 +1,11 @@
 import { PRIORITY } from "@constants/constant";
 import { publishMessage } from "@events/producers/streaming.publisher";
-import { getUserByEmail } from "@repository/users.repository";
+import {
+  getUserByEmailRepo,
+  getUserByIdRepo,
+} from "@repository/users.repository";
 import APIError from "@utils/APIError";
 import logger from "@utils/logger";
-import { getUserById } from "@repository/users.repository";
 import type { NextFunction, Request, Response } from "express";
 import {
   generateRefreshToken,
@@ -46,9 +48,11 @@ export const googleCallback = (
             isAdmin: user.isAdmin,
           },
         });
-      } catch (error:any) {
+      } catch (error: any) {
         logger.error(error.message || "Failed to update profile");
-        return next(new APIError(error.message || "Failed to update profile", 500));
+        return next(
+          new APIError(error.message || "Failed to update profile", 500),
+        );
       }
     },
   )(req, res, next);
@@ -72,7 +76,7 @@ export const protectRoute = async (
       return next(new APIError("Unauthorized", 401));
     }
 
-    const user = await getUserById(decoded.id);
+    const user = await getUserByIdRepo(decoded.id);
 
     if (!user) {
       return next(new APIError("User not found", 404));
@@ -81,7 +85,7 @@ export const protectRoute = async (
     req.user = user;
 
     next();
-  } catch (error:any) {
+  } catch (error: any) {
     logger.error(error.message || "Failed to protect route");
     return next(new APIError(error.message || "Failed to protect route", 500));
   }
@@ -104,7 +108,7 @@ export const restrictToAdmin = () => {
     } catch (error: any) {
       logger.error(error.message || "Failed to restrict access");
       return next(
-        new APIError(error.message || "Failed to restrict access", 500)
+        new APIError(error.message || "Failed to restrict access", 500),
       );
     }
   };
@@ -122,7 +126,7 @@ export const updateProfile = async (
       return next(new APIError("Email is required", 400));
     }
 
-    const user = await getUserByEmail(email);
+    const user = await getUserByEmailRepo(email);
 
     if (!user) {
       return next(new APIError("User not found", 404));

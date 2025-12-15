@@ -15,6 +15,13 @@ enum TransactionStatus {
   CANCELLED
 }
 
+// Enum for subscription status
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 enum PaymentStatus {
   PENDING
   COMPLETED
@@ -30,21 +37,22 @@ enum NotificationType {
 
 // Users
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  username  String   @unique
+  id          String   @id @default(uuid())
+  email       String   @unique
+  username    String   @unique
   phoneNumber String?
-  imageUrl  String?
-  isActive  Boolean  @default(true)
-  isAdmin   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   devices       UserDevice[]
   transactions  Transaction[]
   payments      Payment[]
   videos        Video[]
   notifications Notification[]
+  subscription  Subscription[]
 
   @@index([createdAt])
 }
@@ -172,4 +180,38 @@ model UserDevice {
   @@unique([userId, deviceId])
   @@index([lastUsed])
   @@index([createdAt])
+}
+
+// Channels that users can subscribe to
+model Channel {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // relation to subscriptions
+  subscriptions Subscription[]
+
+  @@index([name])
+}
+
+// User subscriptions to channels
+model Subscription {
+  id        String             @id @default(uuid())
+  userId    String
+  channelId String
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime           @default(now())
+  endDate   DateTime?
+
+  user    User    @relation(fields: [userId], references: [id])
+  channel Channel @relation(fields: [channelId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, channelId]) // a user can't subscribe to same channel twice
+  @@index([status])
+  @@index([startDate])
 }

@@ -1,67 +1,46 @@
 import { prisma, Prisma } from "@configs/database.config";
 import APIError from "@utils/APIError";
 
-export const createUser = async (data: Prisma.UserCreateInput) => {
-  // check if email is already in use
+export const createUserRepo = async (data: Prisma.UserCreateInput) => {
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
   });
-
   if (existingUser) throw new APIError("Email already in use", 400);
 
-  const user = await prisma.user.create({ data });
-  return user;
+  return prisma.user.create({ data });
 };
 
-export const getUserById = async (id: string) => {
-  // check if user exists
+export const getUserByIdRepo = async (id: string) => {
   const user = await prisma.user.findUnique({ where: { id } });
-
   if (!user) throw new APIError("User not found", 404);
-
   return user;
 };
 
-export const getUserByEmail = async (email: string) => {
-  // check if user exists
+export const getUserByEmailRepo = async (email: string) => {
   const user = await prisma.user.findUnique({ where: { email } });
-
   if (!user) throw new APIError("User not found", 404);
-
   return user;
 };
 
-export const getUserByEmail_OAuth = async (email: string) => {
-  return await prisma.user.findUnique({ where: { email } });
-};
-
-
-export const getAllUsers = async () => {
+export const getAllUsersRepo = async () => {
   const users = await prisma.user.findMany();
-
-  if (!users) throw new APIError("No users found", 404);
-
+  if (!users || users.length === 0) throw new APIError("No users found", 404);
   return users;
 };
 
-export const updateUser = async (id: string, data: Prisma.UserUpdateInput) => {
-  if (!id) throw new APIError("User ID is required", 400);
-
-  // Check if user exists
+export const updateUserRepo = async (
+  id: string,
+  data: Prisma.UserUpdateInput,
+) => {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new APIError("User not found", 404);
 
-  // Update
-  const updatedUser = await prisma.user.update({ where: { id }, data });
-  return updatedUser;
+  return prisma.user.update({ where: { id }, data });
 };
 
-export const deleteUser = async (id: string) => {
-  // check if user exists
+export const deleteUserRepo = async (id: string) => {
   const user = await prisma.user.findUnique({ where: { id } });
-
   if (!user) throw new APIError("User not found", 404);
 
-  // update user status to deleted
-  await prisma.user.update({ where: { id }, data: { isActive: false } });
+  return prisma.user.update({ where: { id }, data: { isActive: false } });
 };

@@ -1,4 +1,4 @@
-import { updateUser } from "@repository/users.repository";
+import { updateUserRepo } from "@repository/users.repository";
 import APIError from "@utils/APIError";
 import logger from "@utils/logger";
 import type { Prisma } from "@configs/database.config";
@@ -25,7 +25,7 @@ export const handleUserProfileUpdate = async (payload: UpdateProfilePayload) => 
       throw new APIError("No fields provided to update", 400);
     }
 
-    const updatedUser = await updateUser(id, data);
+    const updatedUser = await updateUserRepo(id, data);
     
     logger.info(`🧑‍🦱 User profile updated successfully for user ${id}`);
 
