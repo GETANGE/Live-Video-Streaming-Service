@@ -39,8 +39,8 @@ export const googleStrategy = () => {
             throw new APIError("Google account email not found", 400);
           }
 
-          // Check if user already exists
-          let user = await repo.getUserByEmailRepo(email);
+          // Check if user already exists (use find - returns null instead of throwing)
+          let user = await repo.findUserByEmailRepo(email);
 
           // If not, create user
           if (!user) {

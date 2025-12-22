@@ -22,6 +22,11 @@ export const getUserByEmailRepo = async (email: string) => {
   return user;
 };
 
+// Returns null instead of throwing - use for "find or create" patterns
+export const findUserByEmailRepo = async (email: string) => {
+  return prisma.user.findUnique({ where: { email } });
+};
+
 export const getAllUsersRepo = async () => {
   const users = await prisma.user.findMany();
   if (!users || users.length === 0) throw new APIError("No users found", 404);

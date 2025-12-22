@@ -18,6 +18,11 @@ import { corsOptions } from "@configs/cors.config";
 
 import APIError from "@utils/APIError";
 import ErrorHandlers from "@middleware/error.middleware";
+import {
+  loadSheddingMiddleware,
+  metricsHandler,
+  readinessHandler,
+} from "@middleware/loadShedding.middleware";
 
 import authRoutes from "@routes/user.route";
 import { attachRedis } from "@middleware/attatchRedis";
@@ -71,8 +76,10 @@ const SensitiveEndpointRatelimit = rateLimit({
   }),
 });
 
-// apply only to sensitive routes
 app.use(SensitiveEndpointRatelimit as any);
+
+// Load shedding middleware - rejects requests when system is overloaded
+app.use(loadSheddingMiddleware);
 
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({
@@ -84,6 +91,12 @@ app.get("/health", (req: Request, res: Response) => {
     },
   });
 });
+
+// System metrics endpoint - shows backpressure status
+app.get("/metrics", metricsHandler);
+
+// Kubernetes readiness probe
+app.get("/ready", readinessHandler);
 
 app.use("/api/v1/auth", attachRedis(redisClient), authRoutes);
 
