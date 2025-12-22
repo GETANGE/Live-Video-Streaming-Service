@@ -13,4 +13,11 @@ export interface TokenPayload {
   email: string;
 }
 
+export interface UpdateProfilePayload {
+  id: string;
+  email?: string;
+  username?: string;
+  phoneNumber?: string;
+}
+
 export {};

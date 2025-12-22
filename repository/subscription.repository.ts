@@ -1,6 +1,5 @@
 import { prisma } from "@configs/database.config";
 
-
 export const findSubscription = async (userId: string, channelId: string) => {
   return prisma.subscription.findFirst({
     where: { userId, channelId },

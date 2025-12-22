@@ -4,7 +4,7 @@ import APIError from "@utils/APIError";
 import {
   getSubscriptionCacheKeys,
   invalidateSubscriptionCache,
-} from "helpers/cacheInvalidations/subscriptionCacheInvalidation";
+} from "@helpers/cacheInvalidations/subscriptionCacheInvalidation";
 import * as repo from "@repository/subscription.repository";
 
 

@@ -9,12 +9,13 @@
 
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@generated/*": ["generated/*"],
       "@configs/*": ["configs/*"],
+      "@helpers/*": ["helpers/*"],
       "@constants/*": ["constants/*"],
       "@controllers/*": ["controllers/*"],
       "@middleware/*": ["middleware/*"],

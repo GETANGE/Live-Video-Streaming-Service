@@ -2,13 +2,8 @@ import { updateUserRepo } from "@repository/users.repository";
 import APIError from "@utils/APIError";
 import logger from "@utils/logger";
 import type { Prisma } from "@configs/database.config";
+import { UpdateProfilePayload } from "@types";
 
-interface UpdateProfilePayload {
-  id: string;
-  email?: string;
-  username?: string;
-  phoneNumber?: string;
-}
 
 export const handleUserProfileUpdate = async (payload: UpdateProfilePayload) => {
   try {
