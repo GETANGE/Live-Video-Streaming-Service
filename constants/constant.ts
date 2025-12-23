@@ -17,5 +17,12 @@ export const PRIORITY = {
   LOW: 1,
 } as const;
 
+export const mpesaConfig = {
+  shortCode: process.env.MPESA_SHORTCODE as string,
+  passkey: process.env.MPESA_PASSKEY as string,
+  transactionType: process.env.MPESA_TRANSACTION_TYPE as string,
+  callbackUrl: process.env.MPESA_CALLBACK_URL as string,
+};
+
 
 export default RabbitMQConfig;

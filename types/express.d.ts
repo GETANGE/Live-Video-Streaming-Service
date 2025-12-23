@@ -19,49 +19,6 @@ export interface TokenPayload {
   email: string;
 }
 
-// Backpressure state management
-export interface BackpressureState {
-  inFlightCount: number;
-  isPaused: boolean;
-  consumerTag: string | null;
-}
-
-// System health status
-export interface SystemHealth {
-  database: {
-    healthy: boolean;
-    metrics: ReturnType<typeof getDatabaseMetrics>;
-  };
-  publisher: {
-    healthy: boolean;
-    metrics: ReturnType<typeof getPublisherMetrics>;
-  };
-  consumer: {
-    healthy: boolean;
-    metrics: ReturnType<typeof getBackpressureMetrics>;
-  };
-  socket: { healthy: boolean; metrics: ReturnType<typeof getSocketMetrics> };
-  overall: boolean;
-}
-
-// Publisher backpressure state
-export interface PublisherState {
-  isBlocked: boolean;
-  pendingMessages: Array<{
-    payload: any;
-    resolve: (value: PublishResult) => void;
-    reject: (error: Error) => void;
-    timestamp: number;
-  }>;
-  drainHandler: (() => void) | null;
-}
-
-export interface PublishResult {
-  success: boolean;
-  queued: boolean;
-  bufferLength: number;
-}
-
 export interface UpdateProfilePayload {
   id: string;
   email?: string;
@@ -120,6 +77,67 @@ export interface MarkAllReadPayload {
 export interface DeletePayload {
   notificationId: string;
   userId: string;
+}
+
+export interface MpesaConfig {
+    shortCode: string;
+    passkey: string;
+    callbackUrl: string;
+    transactionType: string;
+}
+
+export interface STKPushRequest {
+    BusinessShortCode: string;
+    Password: string;
+    Timestamp: string;
+    TransactionType: string;
+    Amount: number;
+    PartyA: string;
+    PartyB: string;
+    PhoneNumber: string;
+    CallBackURL: string;
+    AccountReference: string;
+    TransactionDesc: string;
+}
+
+export interface TransactionCache {
+    CheckoutRequestID: string;
+    MerchantRequestID: string;
+    Amount: number;
+    PhoneNumber: string;
+    status: Status;
+}
+
+// M-Pesa Callback Types
+export interface MpesaCallbackMetadataItem {
+  Name: string;
+  Value: string | number;
+}
+
+export interface MpesaSTKCallback {
+  MerchantRequestID: string;
+  CheckoutRequestID: string;
+  ResultCode: number;
+  ResultDesc: string;
+  CallbackMetadata?: {
+    Item: MpesaCallbackMetadataItem[];
+  };
+}
+
+export interface MpesaCallbackBody {
+  Body: {
+    stkCallback: MpesaSTKCallback;
+  };
+}
+
+export interface ProcessedCallbackResult {
+  success: boolean;
+  transactionId?: string;
+  mpesaReceiptNumber?: string;
+  amount?: number;
+  phoneNumber?: string;
+  resultCode: number;
+  resultDesc: string;
 }
 
 export {};

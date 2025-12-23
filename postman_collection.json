@@ -1,0 +1,570 @@
+{
+  "info": {
+    "name": "Live Video Streaming Service API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Google OAuth Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "google"]
+            },
+            "description": "Redirects to Google OAuth login page"
+          }
+        },
+        {
+          "name": "Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google/callback",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "google", "callback"]
+            },
+            "description": "Google OAuth callback - returns JWT token"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"username\": \"newusername\",\n  \"phoneNumber\": \"254712345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile", "update"]
+            },
+            "description": "Update user profile (queued)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Public",
+          "item": [
+            {
+              "name": "Get Subscriber Count",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/channels/:channelId/count",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "channels", ":channelId", "count"],
+                  "variable": [
+                    {
+                      "key": "channelId",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Multiple Subscriber Counts",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"channelIds\": [\n    \"channel-uuid-1\",\n    \"channel-uuid-2\",\n    \"channel-uuid-3\"\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/channels/counts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "channels", "counts"]
+                }
+              }
+            },
+            {
+              "name": "Get Channel Subscribers",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/channels/:channelId/subscribers?limit=50&cursor=",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "channels", ":channelId", "subscribers"],
+                  "query": [
+                    { "key": "limit", "value": "50" },
+                    { "key": "cursor", "value": "" }
+                  ],
+                  "variable": [
+                    {
+                      "key": "channelId",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Authenticated",
+          "item": [
+            {
+              "name": "Subscribe to Channel",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"endDate\": \"2025-12-31T23:59:59.000Z\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/channels/:channelId/subscribe",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "channels", ":channelId", "subscribe"],
+                  "variable": [
+                    {
+                      "key": "channelId",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                },
+                "description": "Subscribe to a channel (queued - returns 202)"
+              }
+            },
+            {
+              "name": "Unsubscribe from Channel",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/channels/:channelId/subscribe",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "channels", ":channelId", "subscribe"],
+                  "variable": [
+                    {
+                      "key": "channelId",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                },
+                "description": "Unsubscribe from a channel (queued - returns 202)"
+              }
+            },
+            {
+              "name": "Check Subscription Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/channels/:channelId/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "channels", ":channelId", "status"],
+                  "variable": [
+                    {
+                      "key": "channelId",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Check Multiple Subscriptions",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"channelIds\": [\n    \"channel-uuid-1\",\n    \"channel-uuid-2\"\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/check",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "check"]
+                }
+              }
+            },
+            {
+              "name": "Get My Subscriptions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/me?page=1&limit=20&active=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "me"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "20" },
+                    { "key": "active", "value": "true" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Subscription by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "subscription-uuid-here"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin",
+          "item": [
+            {
+              "name": "Get All Subscriptions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions?page=1&limit=50&status=ACTIVE",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "50" },
+                    { "key": "status", "value": "ACTIVE" }
+                  ]
+                },
+                "description": "Admin only - status: ACTIVE, CANCELLED, EXPIRED"
+              }
+            },
+            {
+              "name": "Get Subscription Stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/admin/stats",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "admin", "stats"]
+                },
+                "description": "Admin only"
+              }
+            },
+            {
+              "name": "Get Top Channels",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/admin/top-channels?limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "admin", "top-channels"],
+                  "query": [
+                    { "key": "limit", "value": "10" }
+                  ]
+                },
+                "description": "Admin only"
+              }
+            },
+            {
+              "name": "Process Expired Subscriptions",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/admin/process-expired",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "admin", "process-expired"]
+                },
+                "description": "Admin only - queued (returns 202)"
+              }
+            },
+            {
+              "name": "Send Expiration Reminders",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/admin/send-reminders?days=7",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "admin", "send-reminders"],
+                  "query": [
+                    { "key": "days", "value": "7" }
+                  ]
+                },
+                "description": "Admin only - queued (returns 202)"
+              }
+            },
+            {
+              "name": "Batch Subscribe Users",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptions\": [\n    {\n      \"userId\": \"user-uuid-1\",\n      \"channelId\": \"channel-uuid-1\",\n      \"endDate\": \"2025-12-31T23:59:59.000Z\"\n    },\n    {\n      \"userId\": \"user-uuid-2\",\n      \"channelId\": \"channel-uuid-1\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/subscriptions/admin/batch",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["subscriptions", "admin", "batch"]
+                },
+                "description": "Admin only - queued (returns 202)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "unread"]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read-all"]
+            },
+            "description": "Queued - returns 202"
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/:id/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", ":id", "read"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "notification-uuid-here"
+                }
+              ]
+            },
+            "description": "Queued - returns 202"
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "notification-uuid-here"
+                }
+              ]
+            },
+            "description": "Queued - returns 202"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments (M-Pesa)",
+      "item": [
+        {
+          "name": "Initiate STK Push",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100,\n  \"phoneNumber\": \"254712345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/initiate",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "initiate"]
+            },
+            "description": "Initiates M-Pesa STK Push to user's phone"
+          }
+        },
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "history"]
+            }
+          }
+        },
+        {
+          "name": "M-Pesa Callback (Webhook)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Body\": {\n    \"stkCallback\": {\n      \"MerchantRequestID\": \"29115-34620561-1\",\n      \"CheckoutRequestID\": \"ws_CO_191220231234567890\",\n      \"ResultCode\": 0,\n      \"ResultDesc\": \"The service request is processed successfully.\",\n      \"CallbackMetadata\": {\n        \"Item\": [\n          { \"Name\": \"Amount\", \"Value\": 100 },\n          { \"Name\": \"MpesaReceiptNumber\", \"Value\": \"NLJ7RT61SV\" },\n          { \"Name\": \"TransactionDate\", \"Value\": 20231215120000 },\n          { \"Name\": \"PhoneNumber\", \"Value\": 254712345678 }\n        ]\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/callback",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "callback"]
+            },
+            "description": "Called by M-Pesa servers - for testing only"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health & Metrics",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/health",
+              "host": ["http://localhost:3000"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Metrics",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/metrics",
+              "host": ["http://localhost:3000"],
+              "path": ["metrics"]
+            }
+          }
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/ready",
+              "host": ["http://localhost:3000"],
+              "path": ["ready"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
