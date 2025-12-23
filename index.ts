@@ -25,6 +25,8 @@ import {
 } from "@middleware/loadShedding.middleware";
 
 import authRoutes from "@routes/user.route";
+import subscriptionRoutes from "@routes/subscription.route";
+import notificationRoutes from "@routes/notification.route";
 import { attachRedis } from "@middleware/attatchRedis";
 import { initSocket } from "@configs/socket.config";
 import { connectToRabbitMq } from "@configs/rabbitMQ.config";
@@ -99,6 +101,8 @@ app.get("/metrics", metricsHandler);
 app.get("/ready", readinessHandler);
 
 app.use("/api/v1/auth", attachRedis(redisClient), authRoutes);
+app.use("/api/v1/subscriptions", attachRedis(redisClient), subscriptionRoutes);
+app.use("/api/v1/notifications", attachRedis(redisClient), notificationRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new APIError(`Route ${req.originalUrl} not found`, 404));
