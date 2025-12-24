@@ -186,4 +186,18 @@ export interface QualityPreset {
   audioBitrate: string;
 }
 
+export interface VideoThumbnailPayload {
+  videoId: string;
+  userId: string;
+  buffer: string; // base64 encoded
+  mimetype: string;
+  timestamp: string;
+}
+
+export interface VideoDeletePayload {
+  videoId: string;
+  userId: string;
+  timestamp: string;
+}
+
 export {};

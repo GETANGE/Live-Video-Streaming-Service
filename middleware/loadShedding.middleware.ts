@@ -3,6 +3,7 @@ import { getSocketMetrics } from "@configs/socket.config";
 import { getCDNCircuitStats } from "@services/cdn.service";
 import { getMpesaCircuitStats } from "api/mpesa.api";
 import { getMinioCircuitStats } from "@helpers/hls.helper-functions";
+import { getQueueMetrics } from "@events/consumers/streaming.consumer";
 
 const EXCLUDED_PATHS = ["/health", "/metrics", "/ready"];
 
@@ -55,6 +56,7 @@ export const metricsHandler = (_req: Request, res: Response) => {
       connectedClients: socketMetrics.connectedSockets,
       queueLength: socketMetrics.queueLength,
     },
+    queues: getQueueMetrics(),
     circuitBreakers: {
       cloudinary: getCDNCircuitStats(),
       mpesa: getMpesaCircuitStats(),

@@ -111,11 +111,23 @@ export const uploadThumbnail = async (
     const { videoId } = req.body;
     if (!videoId) throw new APIError("videoId is required", 400);
 
-    const result = await uploaderService.uploadThumbnail(file.buffer, videoId);
+    // Queue thumbnail processing
+    await publishMessage({
+      eventType: "VIDEO_THUMBNAIL",
+      priority: PRIORITY.MEDIUM,
+      payload: {
+        videoId,
+        userId,
+        buffer: file.buffer.toString("base64"),
+        mimetype: file.mimetype,
+        timestamp: new Date().toISOString(),
+      },
+    });
 
-    res.status(200).json({
+    res.status(202).json({
       success: true,
-      data: { url: result.url },
+      message: "Thumbnail upload queued",
+      data: { videoId },
     });
   } catch (error) {
     logger.error("Thumbnail upload error:", error);
@@ -158,11 +170,21 @@ export const deleteVideo = async (
     const { videoId } = req.params;
     if (!videoId) throw new APIError("videoId is required", 400);
 
-    await uploaderService.deleteVideo(videoId);
+    // Queue video deletion
+    await publishMessage({
+      eventType: "VIDEO_DELETE",
+      priority: PRIORITY.LOW,
+      payload: {
+        videoId,
+        userId,
+        timestamp: new Date().toISOString(),
+      },
+    });
 
-    res.status(200).json({
+    res.status(202).json({
       success: true,
-      message: "Video deleted from MinIO and CDN",
+      message: "Video deletion queued",
+      data: { videoId },
     });
   } catch (error) {
     logger.error("Delete video error:", error);
