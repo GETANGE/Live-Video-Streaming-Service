@@ -2,6 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { streamFromMinio, getPublicUrl } from "@helpers/hls.helper-functions";
 import redisClient from "@configs/redis.config";
 import { getCDNCacheKeys } from "@helpers/cacheInvalidations/cdnCacheInvalidation";
+import { createCircuitBreaker, getCircuitStats } from "@utils/circuitBreaker";
 import logger from "@utils/logger";
 
 const CDN_CACHE_TTL = 3600; // 1 hour
@@ -11,8 +12,8 @@ export const isCloudinaryConfigured = (): boolean => {
   return !!process.env.CLOUDINARY_CLOUD_NAME;
 };
 
-// Upload image buffer to Cloudinary
-export const uploadImage = async (
+// Raw upload functions (wrapped by circuit breakers)
+const _uploadImage = async (
   buffer: Buffer,
   folder: string = "images",
   publicId?: string,
@@ -35,8 +36,7 @@ export const uploadImage = async (
   });
 };
 
-// Upload video buffer to Cloudinary
-export const uploadVideo = async (
+const _uploadVideo = async (
   buffer: Buffer,
   folder: string = "videos",
   publicId?: string,
@@ -63,6 +63,55 @@ export const uploadVideo = async (
       )
       .end(buffer);
   });
+};
+
+const _deleteFromCDN = async (
+  publicId: string,
+  resourceType: "image" | "video" = "image",
+): Promise<void> => {
+  await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+};
+
+// Circuit breakers for Cloudinary operations
+const imageUploadBreaker = createCircuitBreaker(_uploadImage, {
+  name: "Cloudinary:ImageUpload",
+  timeout: 30000, // 30s for image uploads
+  errorThresholdPercentage: 50,
+  resetTimeout: 60000, // 1 minute
+  volumeThreshold: 3,
+});
+
+const videoUploadBreaker = createCircuitBreaker(_uploadVideo, {
+  name: "Cloudinary:VideoUpload",
+  timeout: 120000, // 2 minutes for video uploads
+  errorThresholdPercentage: 50,
+  resetTimeout: 60000,
+  volumeThreshold: 3,
+});
+
+const deleteBreaker = createCircuitBreaker(_deleteFromCDN, {
+  name: "Cloudinary:Delete",
+  timeout: 10000,
+  errorThresholdPercentage: 50,
+  resetTimeout: 30000,
+  volumeThreshold: 5,
+});
+
+// Public upload functions (use circuit breakers)
+export const uploadImage = async (
+  buffer: Buffer,
+  folder: string = "images",
+  publicId?: string,
+): Promise<{ url: string; publicId: string }> => {
+  return imageUploadBreaker.fire(buffer, folder, publicId);
+};
+
+export const uploadVideo = async (
+  buffer: Buffer,
+  folder: string = "videos",
+  publicId?: string,
+): Promise<{ url: string; publicId: string; duration: number }> => {
+  return videoUploadBreaker.fire(buffer, folder, publicId);
 };
 
 // Sync thumbnail from MinIO to Cloudinary
@@ -175,7 +224,7 @@ export const getContentUrl = async (
   return { url: getPublicUrl(minioPath), source: "minio" };
 };
 
-// Delete asset from Cloudinary
+// Delete asset from Cloudinary (with circuit breaker)
 export const deleteFromCDN = async (
   publicId: string,
   resourceType: "image" | "video" = "image",
@@ -183,7 +232,7 @@ export const deleteFromCDN = async (
   if (!isCloudinaryConfigured()) return;
 
   try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    await deleteBreaker.fire(publicId, resourceType);
     logger.info(`Deleted ${publicId} from CDN`);
   } catch (error) {
     logger.warn(`Failed to delete ${publicId} from CDN:`, error);
@@ -221,3 +270,10 @@ export const getCDNStreamingUrl = (publicId: string): string => {
     streaming_profile: "hd",
   });
 };
+
+// Get circuit breaker stats for monitoring
+export const getCDNCircuitStats = () => ({
+  imageUpload: getCircuitStats(imageUploadBreaker),
+  videoUpload: getCircuitStats(videoUploadBreaker),
+  delete: getCircuitStats(deleteBreaker),
+});

@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { getSocketMetrics } from "@configs/socket.config";
+import { getCDNCircuitStats } from "@services/cdn.service";
+import { getMpesaCircuitStats } from "api/mpesa.api";
+import { getMinioCircuitStats } from "@helpers/hls.helper-functions";
 
 const EXCLUDED_PATHS = ["/health", "/metrics", "/ready"];
 
@@ -51,6 +54,11 @@ export const metricsHandler = (_req: Request, res: Response) => {
     socket: {
       connectedClients: socketMetrics.connectedSockets,
       queueLength: socketMetrics.queueLength,
+    },
+    circuitBreakers: {
+      cloudinary: getCDNCircuitStats(),
+      mpesa: getMpesaCircuitStats(),
+      minio: getMinioCircuitStats(),
     },
   });
 };
