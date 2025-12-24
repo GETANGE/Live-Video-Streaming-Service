@@ -72,8 +72,7 @@ export const processVideo = async (
   logger.info(`Processing video ${videoId} with FFmpeg`);
 
   // Transcode to HLS
-  const { masterPlaylist, variants, thumbnailBuffer, duration } =
-    await processVideoToHLS(buffer, videoId);
+  const { masterPlaylist, variants, thumbnailBuffer, duration } = await processVideoToHLS(buffer, videoId);
 
   // Upload master playlist
   const masterPath = `hls/${videoId}/master.m3u8`;
@@ -101,8 +100,10 @@ export const processVideo = async (
   logger.info(`Video ${videoId} processed and uploaded`);
 
   // Return URLs (CDN if available, MinIO fallback)
-  const thumbnailUrl = getContentUrl("thumbnail", videoId);
-  const streamingUrl = getContentUrl("stream", videoId);
+  const [thumbnailUrl, streamingUrl] = await Promise.all([
+    getContentUrl("thumbnail", videoId),
+    getContentUrl("stream", videoId),
+  ]);
 
   return {
     id: videoId,
@@ -164,9 +165,12 @@ export const deleteVideo = async (videoId: string): Promise<void> => {
   await deleteFromCDN(`thumbnails/${videoId}`, "image");
   await deleteFromCDN(`videos/${videoId}`, "video");
 
-  // Clear CDN cache
-  clearCDNCache("thumbnail", videoId);
-  clearCDNCache("video", videoId);
+  // Clear CDN cache entries
+  await Promise.all([
+    clearCDNCache("thumbnail", videoId),
+    clearCDNCache("video", videoId),
+    clearCDNCache("stream", videoId),
+  ]);
 };
 
 // Delete profile picture
@@ -190,14 +194,21 @@ export const pushVideoToCDN = async (
 };
 
 // Get video URLs with CDN preference
-export const getVideoUrls = (videoId: string): {
+export const getVideoUrls = async (
+  videoId: string,
+): Promise<{
   thumbnail: { url: string; source: "cdn" | "minio" };
   stream: { url: string; source: "cdn" | "minio" };
   raw: { url: string; source: "minio" };
-} => {
+}> => {
+  const [thumbnail, stream] = await Promise.all([
+    getContentUrl("thumbnail", videoId),
+    getContentUrl("stream", videoId),
+  ]);
+
   return {
-    thumbnail: getContentUrl("thumbnail", videoId),
-    stream: getContentUrl("stream", videoId),
+    thumbnail,
+    stream,
     raw: { url: getPublicUrl(`raw/${videoId}.mp4`), source: "minio" },
   };
 };

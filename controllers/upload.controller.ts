@@ -133,7 +133,7 @@ export const getVideoUrls = async (
     const { videoId } = req.params;
     if (!videoId) throw new APIError("videoId is required", 400);
 
-    const urls = uploaderService.getVideoUrls(videoId);
+    const urls = await uploaderService.getVideoUrls(videoId);
 
     res.status(200).json({
       success: true,

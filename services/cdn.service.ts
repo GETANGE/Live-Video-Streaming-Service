@@ -1,9 +1,10 @@
 import { v2 as cloudinary } from "cloudinary";
 import { streamFromMinio, getPublicUrl } from "@helpers/hls.helper-functions";
+import redisClient from "@configs/redis.config";
+import { getCDNCacheKeys } from "@helpers/cacheInvalidations/cdnCacheInvalidation";
 import logger from "@utils/logger";
 
-// In-memory cache for CDN URLs (use Redis in production)
-const cdnUrlCache = new Map<string, string>();
+const CDN_CACHE_TTL = 3600; // 1 hour
 
 // Check if Cloudinary is configured
 export const isCloudinaryConfigured = (): boolean => {
@@ -64,7 +65,7 @@ export const uploadVideo = async (
   });
 };
 
-// Sync thumbnail from MinIO to Cloudinary (eager - called after processing)
+// Sync thumbnail from MinIO to Cloudinary
 export const syncThumbnailToCDN = async (
   videoId: string,
   buffer: Buffer,
@@ -79,8 +80,9 @@ export const syncThumbnailToCDN = async (
 
     const result = await uploadImage(buffer, "thumbnails", videoId);
 
-    // Cache the CDN URL
-    cdnUrlCache.set(`thumbnail:${videoId}`, result.url);
+    // Cache the CDN URL with version
+    const cacheKeys = await getCDNCacheKeys();
+    await redisClient.setex(cacheKeys.thumbnail(videoId), CDN_CACHE_TTL, result.url);
 
     logger.info(`Thumbnail ${videoId} synced to CDN: ${result.url}`);
     return { cdnUrl: result.url, publicId: result.publicId };
@@ -90,7 +92,7 @@ export const syncThumbnailToCDN = async (
   }
 };
 
-// Sync video from MinIO to Cloudinary (lazy - called on demand)
+// Sync video from MinIO to Cloudinary (lazy)
 export const syncVideoToCDN = async (
   videoId: string,
   minioPath: string,
@@ -100,8 +102,9 @@ export const syncVideoToCDN = async (
     return null;
   }
 
-  // Check cache first
-  const cached = cdnUrlCache.get(`video:${videoId}`);
+  // Check Redis cache first
+  const cacheKeys = await getCDNCacheKeys();
+  const cached = await redisClient.get(cacheKeys.video(videoId));
   if (cached) {
     return { cdnUrl: cached, publicId: `videos/${videoId}` };
   }
@@ -119,8 +122,8 @@ export const syncVideoToCDN = async (
 
     const result = await uploadVideo(buffer, "videos", videoId);
 
-    // Cache the CDN URL
-    cdnUrlCache.set(`video:${videoId}`, result.url);
+    // Cache the CDN URL with version
+    await redisClient.setex(cacheKeys.video(videoId), CDN_CACHE_TTL, result.url);
 
     logger.info(`Video ${videoId} synced to CDN: ${result.url}`);
     return { cdnUrl: result.url, publicId: result.publicId };
@@ -130,14 +133,27 @@ export const syncVideoToCDN = async (
   }
 };
 
-// Get content URL - returns CDN URL if available, MinIO fallback
-export const getContentUrl = (
+// Get content URL - returns CDN URL if cached, MinIO fallback
+export const getContentUrl = async (
   type: "thumbnail" | "video" | "stream",
   id: string,
-): { url: string; source: "cdn" | "minio" } => {
-  const cacheKey = type === "stream" ? `video:${id}` : `${type}:${id}`;
-  const cached = cdnUrlCache.get(cacheKey);
+): Promise<{ url: string; source: "cdn" | "minio" }> => {
+  const cacheKeys = await getCDNCacheKeys();
 
+  let cacheKey: string;
+  switch (type) {
+    case "thumbnail":
+      cacheKey = cacheKeys.thumbnail(id);
+      break;
+    case "video":
+      cacheKey = cacheKeys.video(id);
+      break;
+    case "stream":
+      cacheKey = cacheKeys.stream(id);
+      break;
+  }
+
+  const cached = await redisClient.get(cacheKey);
   if (cached) {
     return { url: cached, source: "cdn" };
   }
@@ -174,9 +190,27 @@ export const deleteFromCDN = async (
   }
 };
 
-// Clear CDN cache entry
-export const clearCDNCache = (type: "thumbnail" | "video", id: string): void => {
-  cdnUrlCache.delete(`${type}:${id}`);
+// Clear specific CDN cache entry
+export const clearCDNCache = async (
+  type: "thumbnail" | "video" | "stream",
+  id: string,
+): Promise<void> => {
+  const cacheKeys = await getCDNCacheKeys();
+
+  let cacheKey: string;
+  switch (type) {
+    case "thumbnail":
+      cacheKey = cacheKeys.thumbnail(id);
+      break;
+    case "video":
+      cacheKey = cacheKeys.video(id);
+      break;
+    case "stream":
+      cacheKey = cacheKeys.stream(id);
+      break;
+  }
+
+  await redisClient.del(cacheKey);
 };
 
 // Get Cloudinary streaming URL for a video
