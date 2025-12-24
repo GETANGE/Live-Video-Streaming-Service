@@ -15,7 +15,6 @@ enum TransactionStatus {
   CANCELLED
 }
 
-// Enum for subscription status
 enum SubscriptionStatus {
   ACTIVE
   EXPIRED
@@ -65,11 +64,11 @@ model Video {
   duration     Int      @default(0)
   uploadedBy   String?
   channelId    String?
-  originalUrl  String?  // MinIO raw storage URL
-  cdnUrl       String?  // Cloudinary optimized URL
+  originalUrl  String?
+  cdnUrl       String?
   thumbnailUrl String?
   streamingUrl String?
-  publicId     String?  // Cloudinary public ID
+  publicId     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -85,14 +84,14 @@ model Video {
   @@index([uploadedBy])
   @@index([channelId])
   @@index([createdAt])
-  @@index([cdnSynced, cdnSyncAttempts]) // For efficient sync queries
+  @@index([cdnSynced, cdnSyncAttempts])
 }
 
-// Data sources (e.g., payment or analytics)
+// Data sources
 model DataSource {
   id        String   @id @default(uuid())
   name      String
-  type      String // e.g., "payment", "video", "analytics"
+  type      String
   apiKey    String?
   secretKey String?
   createdAt DateTime @default(now())
@@ -113,7 +112,7 @@ model Transaction {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  user    User?    @relation(fields: [userId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
   payment Payment? @relation(fields: [paymentId], references: [id])
 
   @@index([userId])
@@ -128,11 +127,11 @@ model Payment {
   status        PaymentStatus @default(PENDING)
   transactionId String?       @unique
   userId        String
-  method        String // e.g., "card", "mobile_money", "wallet"
+  method        String
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  user         User?         @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
   transactions Transaction[]
 
   @@index([userId])
@@ -164,9 +163,9 @@ model Notification {
 model Device {
   id        String   @id @default(uuid())
   name      String
-  type      String // e.g., "mobile", "tablet", "desktop"
-  platform  String? // optional platform info
-  osVersion String? // optional OS version
+  type      String
+  platform  String?
+  osVersion String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -194,7 +193,7 @@ model UserDevice {
   @@index([createdAt])
 }
 
-// Channels that users can subscribe to
+// Channels
 model Channel {
   id          String   @id @default(uuid())
   name        String   @unique
@@ -208,7 +207,7 @@ model Channel {
   @@index([name])
 }
 
-// User subscriptions to channels
+// Subscriptions
 model Subscription {
   id        String             @id @default(uuid())
   userId    String
@@ -216,14 +215,13 @@ model Subscription {
   status    SubscriptionStatus @default(ACTIVE)
   startDate DateTime           @default(now())
   endDate   DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
   user    User    @relation(fields: [userId], references: [id])
   channel Channel @relation(fields: [channelId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, channelId]) // a user can't subscribe to same channel twice
+  @@unique([userId, channelId])
   @@index([status])
   @@index([startDate])
 }

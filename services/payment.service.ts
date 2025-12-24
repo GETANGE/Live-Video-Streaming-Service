@@ -7,7 +7,8 @@ import logger from "@utils/logger";
 export const generatePassword = (timestamp: string): string => {
   const { passkey, shortCode } = mpesaConfig;
 
-  const password = Buffer.from(`${passkey}${timestamp}${shortCode}`).toString(
+  // M-Pesa password format: Base64(Shortcode + Passkey + Timestamp)
+  const password = Buffer.from(`${shortCode}${passkey}${timestamp}`).toString(
     "base64",
   );
   return password;

@@ -51,18 +51,18 @@ export const sendSTKPUSH_request = async (
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      requestBody,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
+    const errorBody = await response.text();
+    logger.error(`M-Pesa STK Push error: ${errorBody}`);
     throw new Error(`Failed to send STK push request: ${response.statusText}`);
   }
 
   const data: any = await response.json();
 
-  logger.info("💫 STK push request created successfully");
+  logger.info("💫 STK push request sent successfully");
 
   return data;
 };
