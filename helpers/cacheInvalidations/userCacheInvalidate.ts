@@ -3,9 +3,7 @@ import logger from "@utils/logger";
 
 const USER_VERSION_KEY = "user:version";
 
-
 const userKey = (version: string, key: string) => `user:${key}:${version}`;
-
 
 const getUserVersion = async () => {
   let version = await redisClient.get(USER_VERSION_KEY);

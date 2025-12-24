@@ -4,8 +4,7 @@ import redisClient from "@configs/redis.config";
 // Version-based cache config
 const CDN_VERSION_KEY = "cdn:version";
 
-const cdnCacheKey = (version: string, key: string) =>
-  `cdn:${version}:${key}`;
+const cdnCacheKey = (version: string, key: string) => `cdn:${version}:${key}`;
 
 const getCDNVersion = async (): Promise<string> => {
   let version = await redisClient.get(CDN_VERSION_KEY);

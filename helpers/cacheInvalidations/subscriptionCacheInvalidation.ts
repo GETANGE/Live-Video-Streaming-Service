@@ -3,7 +3,8 @@ import logger from "@utils/logger";
 
 const SUBSCRIPTION_VERSION_KEY = "subscription:version";
 
-const subscriptionKey = (version: string, key: string) => `${SUBSCRIPTION_VERSION_KEY}:${key}:${version}`;
+const subscriptionKey = (version: string, key: string) =>
+  `${SUBSCRIPTION_VERSION_KEY}:${key}:${version}`;
 
 const getSubscriptionVersion = async () => {
   let version = await redisClient.get(SUBSCRIPTION_VERSION_KEY);
@@ -18,14 +19,11 @@ export const getSubscriptionCacheKeys = async () => {
   const version = await getSubscriptionVersion();
 
   return {
-    byId: (id: string) =>
-      subscriptionKey(version, `id:${id}`),
+    byId: (id: string) => subscriptionKey(version, `id:${id}`),
 
-    byUserId: (userId: string) =>
-      subscriptionKey(version, `user:${userId}`),
+    byUserId: (userId: string) => subscriptionKey(version, `user:${userId}`),
 
-    all: () =>
-      subscriptionKey(version, `all`),
+    all: () => subscriptionKey(version, `all`),
   };
 };
 
