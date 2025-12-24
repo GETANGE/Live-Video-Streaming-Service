@@ -1,12 +1,17 @@
 {
   "info": {
     "name": "Live Video Streaming Service API",
+    "description": "API for video streaming with MinIO storage and Cloudinary CDN",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000/api/v1"
+      "value": "http://localhost:8040/api/v1"
+    },
+    {
+      "key": "host",
+      "value": "http://localhost:8040"
     },
     {
       "key": "token",
@@ -78,6 +83,140 @@
       ]
     },
     {
+      "name": "Uploads & CDN",
+      "description": "Video/image uploads to MinIO with automatic CDN sync to Cloudinary",
+      "item": [
+        {
+          "name": "Upload Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/uploads/profile-pic",
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "profile-pic"]
+            },
+            "description": "Upload profile picture (max 5MB, JPEG/PNG/WebP)"
+          }
+        },
+        {
+          "name": "Upload Video",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "title",
+                  "value": "My Video Title",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Video description",
+                  "type": "text"
+                },
+                {
+                  "key": "channelId",
+                  "value": "channel-uuid-here",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/uploads/video",
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "video"]
+            },
+            "description": "Upload video for HLS processing (max 50MB). Stored in MinIO, thumbnails synced to Cloudinary CDN via cron job."
+          }
+        },
+        {
+          "name": "Upload Thumbnail",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "videoId",
+                  "value": "video-uuid-here",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/uploads/thumbnail",
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "thumbnail"]
+            },
+            "description": "Upload custom thumbnail for a video (max 5MB)"
+          }
+        },
+        {
+          "name": "Get Video URLs",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/videos/:videoId/urls",
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "videos", ":videoId", "urls"],
+              "variable": [
+                {
+                  "key": "videoId",
+                  "value": "video-uuid-here"
+                }
+              ]
+            },
+            "description": "Get video URLs. Returns CDN URL if synced, MinIO fallback otherwise."
+          }
+        },
+        {
+          "name": "Delete Video",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/videos/:videoId",
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "videos", ":videoId"],
+              "variable": [
+                {
+                  "key": "videoId",
+                  "value": "video-uuid-here"
+                }
+              ]
+            },
+            "description": "Delete video from MinIO (raw + HLS) and Cloudinary CDN"
+          }
+        }
+      ]
+    },
+    {
       "name": "Subscriptions",
       "item": [
         {
@@ -115,7 +254,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"channelIds\": [\n    \"channel-uuid-1\",\n    \"channel-uuid-2\",\n    \"channel-uuid-3\"\n  ]\n}"
+                  "raw": "{\n  \"channelIds\": [\"channel-uuid-1\", \"channel-uuid-2\"]\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/subscriptions/channels/counts",
@@ -176,8 +315,7 @@
                       "value": "channel-uuid-here"
                     }
                   ]
-                },
-                "description": "Subscribe to a channel (queued - returns 202)"
+                }
               }
             },
             {
@@ -195,8 +333,7 @@
                       "value": "channel-uuid-here"
                     }
                   ]
-                },
-                "description": "Unsubscribe from a channel (queued - returns 202)"
+                }
               }
             },
             {
@@ -229,7 +366,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"channelIds\": [\n    \"channel-uuid-1\",\n    \"channel-uuid-2\"\n  ]\n}"
+                  "raw": "{\n  \"channelIds\": [\"channel-uuid-1\", \"channel-uuid-2\"]\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/subscriptions/check",
@@ -305,8 +442,7 @@
                   "raw": "{{baseUrl}}/subscriptions/admin/stats",
                   "host": ["{{baseUrl}}"],
                   "path": ["subscriptions", "admin", "stats"]
-                },
-                "description": "Admin only"
+                }
               }
             },
             {
@@ -321,8 +457,7 @@
                   "query": [
                     { "key": "limit", "value": "10" }
                   ]
-                },
-                "description": "Admin only"
+                }
               }
             },
             {
@@ -334,8 +469,7 @@
                   "raw": "{{baseUrl}}/subscriptions/admin/process-expired",
                   "host": ["{{baseUrl}}"],
                   "path": ["subscriptions", "admin", "process-expired"]
-                },
-                "description": "Admin only - queued (returns 202)"
+                }
               }
             },
             {
@@ -350,8 +484,7 @@
                   "query": [
                     { "key": "days", "value": "7" }
                   ]
-                },
-                "description": "Admin only - queued (returns 202)"
+                }
               }
             },
             {
@@ -366,14 +499,13 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"subscriptions\": [\n    {\n      \"userId\": \"user-uuid-1\",\n      \"channelId\": \"channel-uuid-1\",\n      \"endDate\": \"2025-12-31T23:59:59.000Z\"\n    },\n    {\n      \"userId\": \"user-uuid-2\",\n      \"channelId\": \"channel-uuid-1\"\n    }\n  ]\n}"
+                  "raw": "{\n  \"subscriptions\": [\n    {\"userId\": \"user-uuid-1\", \"channelId\": \"channel-uuid-1\", \"endDate\": \"2025-12-31T23:59:59.000Z\"},\n    {\"userId\": \"user-uuid-2\", \"channelId\": \"channel-uuid-1\"}\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/subscriptions/admin/batch",
                   "host": ["{{baseUrl}}"],
                   "path": ["subscriptions", "admin", "batch"]
-                },
-                "description": "Admin only - queued (returns 202)"
+                }
               }
             }
           ]
@@ -416,8 +548,7 @@
               "raw": "{{baseUrl}}/notifications/read-all",
               "host": ["{{baseUrl}}"],
               "path": ["notifications", "read-all"]
-            },
-            "description": "Queued - returns 202"
+            }
           }
         },
         {
@@ -435,8 +566,7 @@
                   "value": "notification-uuid-here"
                 }
               ]
-            },
-            "description": "Queued - returns 202"
+            }
           }
         },
         {
@@ -454,8 +584,7 @@
                   "value": "notification-uuid-here"
                 }
               ]
-            },
-            "description": "Queued - returns 202"
+            }
           }
         }
       ]
@@ -510,14 +639,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"Body\": {\n    \"stkCallback\": {\n      \"MerchantRequestID\": \"29115-34620561-1\",\n      \"CheckoutRequestID\": \"ws_CO_191220231234567890\",\n      \"ResultCode\": 0,\n      \"ResultDesc\": \"The service request is processed successfully.\",\n      \"CallbackMetadata\": {\n        \"Item\": [\n          { \"Name\": \"Amount\", \"Value\": 100 },\n          { \"Name\": \"MpesaReceiptNumber\", \"Value\": \"NLJ7RT61SV\" },\n          { \"Name\": \"TransactionDate\", \"Value\": 20231215120000 },\n          { \"Name\": \"PhoneNumber\", \"Value\": 254712345678 }\n        ]\n      }\n    }\n  }\n}"
+              "raw": "{\n  \"Body\": {\n    \"stkCallback\": {\n      \"MerchantRequestID\": \"29115-34620561-1\",\n      \"CheckoutRequestID\": \"ws_CO_191220231234567890\",\n      \"ResultCode\": 0,\n      \"ResultDesc\": \"The service request is processed successfully.\",\n      \"CallbackMetadata\": {\n        \"Item\": [\n          {\"Name\": \"Amount\", \"Value\": 100},\n          {\"Name\": \"MpesaReceiptNumber\", \"Value\": \"NLJ7RT61SV\"},\n          {\"Name\": \"TransactionDate\", \"Value\": 20231215120000},\n          {\"Name\": \"PhoneNumber\", \"Value\": 254712345678}\n        ]\n      }\n    }\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/payments/callback",
               "host": ["{{baseUrl}}"],
               "path": ["payments", "callback"]
             },
-            "description": "Called by M-Pesa servers - for testing only"
+            "description": "M-Pesa callback webhook - for testing only"
           }
         }
       ]
@@ -532,8 +661,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/health",
-              "host": ["http://localhost:3000"],
+              "raw": "{{host}}/health",
+              "host": ["{{host}}"],
               "path": ["health"]
             }
           }
@@ -545,10 +674,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/metrics",
-              "host": ["http://localhost:3000"],
+              "raw": "{{host}}/metrics",
+              "host": ["{{host}}"],
               "path": ["metrics"]
-            }
+            },
+            "description": "Returns memory usage and socket connection stats"
           }
         },
         {
@@ -558,8 +688,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/ready",
-              "host": ["http://localhost:3000"],
+              "raw": "{{host}}/ready",
+              "host": ["{{host}}"],
               "path": ["ready"]
             }
           }

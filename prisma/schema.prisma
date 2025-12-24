@@ -57,23 +57,35 @@ model User {
   @@index([createdAt])
 }
 
-// Videos (metadata only)
+// Videos
 model Video {
-  id              String   @id @default(uuid())
-  title           String
-  description     String?
-  duration        Int // in seconds
-  uploadedBy      String? // optional relation to User id
-  mongoManifestId String? // reference to MongoDB manifest/document
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  duration     Int      @default(0)
+  uploadedBy   String?
+  channelId    String?
+  originalUrl  String?  // MinIO raw storage URL
+  cdnUrl       String?  // Cloudinary optimized URL
+  thumbnailUrl String?
+  streamingUrl String?
+  publicId     String?  // Cloudinary public ID
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user User? @relation(fields: [uploadedBy], references: [id])
+  // CDN sync tracking
+  cdnSynced       Boolean   @default(false)
+  cdnSyncedAt     DateTime?
+  cdnSyncAttempts Int       @default(0)
+
+  user    User?    @relation(fields: [uploadedBy], references: [id])
+  channel Channel? @relation(fields: [channelId], references: [id])
 
   @@index([title])
   @@index([uploadedBy])
+  @@index([channelId])
   @@index([createdAt])
-  @@index([title, description])
+  @@index([cdnSynced, cdnSyncAttempts]) // For efficient sync queries
 }
 
 // Data sources (e.g., payment or analytics)
@@ -190,8 +202,8 @@ model Channel {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // relation to subscriptions
   subscriptions Subscription[]
+  videos        Video[]
 
   @@index([name])
 }

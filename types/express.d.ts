@@ -65,6 +65,12 @@ export interface Subscription {
   channel?: { name: string } | null;
 }
 
+export interface UnsubscribePayload {
+  userId: string;
+  channelId: string;
+  timestamp: string;
+}
+
 export interface MarkReadPayload {
   notificationId: string;
   userId: string;
@@ -138,6 +144,46 @@ export interface ProcessedCallbackResult {
   phoneNumber?: string;
   resultCode: number;
   resultDesc: string;
+}
+
+export interface VideoUploadedPayload {
+  videoId: string;
+  userId: string;
+  channelId: string;
+  title: string;
+  description?: string;
+  originalUrl: string;
+  cdnUrl: string;
+  thumbnailUrl: string;
+  streamingUrl: string;
+  publicId: string;
+  timestamp: string;
+}
+
+export interface UploadResult {
+  id: string;
+  originalUrl: string;
+  thumbnailUrl: string;
+  streamingUrl: string;
+  duration: number;
+}
+
+export interface VideoProcessPayload {
+  videoId: string;
+  userId: string;
+  channelId: string;
+  title: string;
+  description?: string;
+  fileName: string;
+  timestamp: string;
+}
+
+export interface QualityPreset {
+  name: string;
+  width: number;
+  height: number;
+  bitrate: string;
+  audioBitrate: string;
 }
 
 export {};

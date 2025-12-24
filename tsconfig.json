@@ -23,6 +23,7 @@
       "@routes/*": ["routes/*"],
       "@services/*": ["services/*"],
       "@utils/*": ["utils/*"],
+      "@jobs/*": ["jobs/*"],
       "@events/*": ["events/*"],
       "@types": ["types/express.d.ts"],
       "@prisma/*": ["prisma/*"]

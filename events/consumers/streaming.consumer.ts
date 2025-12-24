@@ -9,11 +9,14 @@ import { handleSubscriptionBatchCreate } from "./eventHandlers/subscription_hand
 import { handleNotificationDelete } from "./eventHandlers/notification_handlers/notification_delete";
 import { handleNotificationMarkAllRead } from "./eventHandlers/notification_handlers/notification_readAll";
 import { handleNotificationMarkRead } from "./eventHandlers/notification_handlers/notification_read";
+import { handlePaymentInitiated } from "./eventHandlers/payment_handlers/payment_initiated";
+import { handlePaymentCallback } from "./eventHandlers/payment_handlers/payment_callback";
+import { handleVideoProcess } from "./eventHandlers/video_handlers/video_process";
 import RabbitMQConfig from "@constants/constant";
 import logger from "@utils/logger";
 
 const MAX_RETRIES = 3;
-const PREFETCH_COUNT = 10; // handle backpressure via prefetch
+const PREFETCH_COUNT = 10;
 
 const eventHandlers: Record<string, (payload: any) => Promise<void>> = {
   // User events
@@ -29,6 +32,11 @@ const eventHandlers: Record<string, (payload: any) => Promise<void>> = {
   NOTIFICATION_MARK_READ: handleNotificationMarkRead,
   NOTIFICATION_MARK_ALL_READ: handleNotificationMarkAllRead,
   NOTIFICATION_DELETE: handleNotificationDelete,
+  // Payment events
+  PAYMENT_INITIATED: handlePaymentInitiated,
+  PAYMENT_CALLBACK: handlePaymentCallback,
+  // Video events
+  VIDEO_PROCESS: handleVideoProcess,
 };
 
 export const getBackpressureMetrics = () => ({
@@ -42,7 +50,7 @@ export const consumeMessage = async () => {
   // Prefetch limits unacked messages - RabbitMQ handles backpressure
   await channel.prefetch(PREFETCH_COUNT);
 
-  logger.info("Consumer started...");
+  logger.info("💫 Consumer started...");
 
   channel.consume(
     RabbitMQConfig.queueName,

@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { getAuthAccessToken, sendSTKPUSH_request } from "api/mpesa.api";
 import * as paymentService from "@services/payment.service";
+import { publishMessage } from "@events/producers/streaming.publisher";
 import { MpesaCallbackBody } from "@types";
+import { PRIORITY } from "@constants/constant";
 import { createSTKPUSH_request } from "@helpers/payment.helper";
 import APIError from "@utils/APIError";
 import logger from "@utils/logger";
 
+// Initiate STK Push - sends to M-Pesa, queues transaction creation
 export const initiateSTK_push = async (
   req: Request,
   res: Response,
@@ -21,16 +24,10 @@ export const initiateSTK_push = async (
       throw new APIError("Amount and phone number are required", 400);
     }
 
-    // Get access token
     const accessToken = await getAuthAccessToken();
-
-    // Generate timestamp and password
     const timestamp = paymentService.generateTimestamp();
     const password = paymentService.generatePassword(timestamp);
-    
-    console.log(`🧑‍🦱 Initiating STK Push for user ${userId} timestamp ${timestamp} password ${password}`);
 
-    // Prepare STK Push request
     const stkRequest = await createSTKPUSH_request(
       timestamp,
       password,
@@ -39,21 +36,27 @@ export const initiateSTK_push = async (
       userId,
     );
 
-    // Send STK Push request
     const response = await sendSTKPUSH_request(stkRequest, accessToken);
 
-    // Create pending transaction
-    await paymentService.initiatePayment({
-      userId,
-      amount,
-      phoneNumber,
-      checkoutRequestId: response.CheckoutRequestID,
-      merchantRequestId: response.MerchantRequestID,
-    });
+    // Queue transaction creation
+    const message = {
+      eventType: "PAYMENT_INITIATED",
+      priority: PRIORITY.HIGH,
+      payload: {
+        userId,
+        amount,
+        phoneNumber,
+        checkoutRequestId: response.CheckoutRequestID,
+        merchantRequestId: response.MerchantRequestID,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    await publishMessage(message);
 
     res.status(200).json({
       success: true,
-      message: "STK Push sent. Please check your phone to complete payment.",
+      message: "STK Push sent. Check your phone to complete payment.",
       data: {
         checkoutRequestId: response.CheckoutRequestID,
         merchantRequestId: response.MerchantRequestID,
@@ -65,29 +68,35 @@ export const initiateSTK_push = async (
   }
 };
 
+// M-Pesa callback - queues callback processing
 export const handleSTK_push_callback = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
   try {
     const callbackData: MpesaCallbackBody = req.body;
 
-    logger.info("M-Pesa callback received:", JSON.stringify(callbackData));
+    logger.info("M-Pesa callback received");
 
-    // Extract the STK callback data
-    const stkCallback = callbackData.Body.stkCallback;
+    const message = {
+      eventType: "PAYMENT_CALLBACK",
+      priority: PRIORITY.HIGH,
+      payload: {
+        stkCallback: callbackData.Body.stkCallback,
+        timestamp: new Date().toISOString(),
+      },
+    };
 
-    // Process the callback
-    await paymentService.processCallback(stkCallback);
+    await publishMessage(message);
 
+    // Always respond 200 to M-Pesa
     res.status(200).json({
       ResultCode: 0,
-      ResultDesc: "Callback received successfully",
+      ResultDesc: "Callback received",
     });
   } catch (error) {
     logger.error("M-Pesa callback error:", error);
-    // respond with 200 to prevent M-Pesa retries
     res.status(200).json({
       ResultCode: 0,
       ResultDesc: "Callback received",
@@ -95,6 +104,7 @@ export const handleSTK_push_callback = async (
   }
 };
 
+// GET - synchronous (needs immediate response)
 export const paymentTransaction_history = async (
   req: Request,
   res: Response,
@@ -111,10 +121,7 @@ export const paymentTransaction_history = async (
 
     res.status(200).json({
       success: true,
-      data: {
-        payments,
-        transactions,
-      },
+      data: { payments, transactions },
     });
   } catch (error) {
     logger.error("Payment history error:", error);

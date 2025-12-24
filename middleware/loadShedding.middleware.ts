@@ -1,13 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import {
-  isDatabaseUnderBackpressure,
-  getDatabaseMetrics,
-} from "@configs/database.config";
 import { getSocketMetrics } from "@configs/socket.config";
-import logger from "@utils/logger";
 
 const EXCLUDED_PATHS = ["/health", "/metrics", "/ready"];
-const RETRY_AFTER_SECONDS = 5;
 
 export const loadSheddingMiddleware = (
   req: Request,
@@ -18,13 +12,15 @@ export const loadSheddingMiddleware = (
     return next();
   }
 
-  if (isDatabaseUnderBackpressure()) {
-    logger.warn(`Load shedding: Rejecting ${req.method} ${req.path}`);
+  // Check memory usage for load shedding
+  const memUsage = process.memoryUsage();
+  const heapUsedPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
 
-    res.setHeader("Retry-After", RETRY_AFTER_SECONDS);
+  if (heapUsedPercent > 90) {
+    res.setHeader("Retry-After", "5");
     return res.status(503).json({
       error: "Service temporarily unavailable",
-      retryAfter: RETRY_AFTER_SECONDS,
+      retryAfter: 5,
     });
   }
 
@@ -32,16 +28,15 @@ export const loadSheddingMiddleware = (
 };
 
 export const metricsHandler = (_req: Request, res: Response) => {
-  const dbMetrics = getDatabaseMetrics();
   const socketMetrics = getSocketMetrics();
-  const healthy = !dbMetrics.isUnderPressure;
+  const memUsage = process.memoryUsage();
 
-  res.status(healthy ? 200 : 503).json({
-    status: healthy ? "healthy" : "degraded",
+  res.status(200).json({
+    status: "healthy",
     timestamp: new Date().toISOString(),
-    database: {
-      activeQueries: dbMetrics.activeQueries,
-      maxConcurrent: dbMetrics.maxConcurrentQueries,
+    memory: {
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + "MB",
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + "MB",
     },
     socket: {
       connectedClients: socketMetrics.connectedSockets,
@@ -51,9 +46,5 @@ export const metricsHandler = (_req: Request, res: Response) => {
 };
 
 export const readinessHandler = (_req: Request, res: Response) => {
-  const healthy = !isDatabaseUnderBackpressure();
-
-  res.status(healthy ? 200 : 503).json({
-    status: healthy ? "ready" : "not_ready",
-  });
+  res.status(200).json({ status: "ready" });
 };

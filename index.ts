@@ -28,11 +28,14 @@ import authRoutes from "@routes/user.route";
 import subscriptionRoutes from "@routes/subscription.route";
 import notificationRoutes from "@routes/notification.route";
 import paymentRoutes from "@routes/payment.route";
+import uploadRoutes from "@routes/upload.route";
 import { attachRedis } from "@middleware/attatchRedis";
+import { initMinio } from "@configs/minio.config";
 import { initSocket } from "@configs/socket.config";
 import { connectToRabbitMq } from "@configs/rabbitMQ.config";
 import { consumeMessage } from "@events/consumers/streaming.consumer";
 import { googleStrategy } from "@services/user.service";
+import { startAllJobs, stopAllJobs } from "@jobs/index";
 
 dotenv.config();
 
@@ -105,6 +108,7 @@ app.use("/api/v1/auth", attachRedis(redisClient), authRoutes);
 app.use("/api/v1/subscriptions", attachRedis(redisClient), subscriptionRoutes);
 app.use("/api/v1/notifications", attachRedis(redisClient), notificationRoutes);
 app.use("/api/v1/payments", attachRedis(redisClient), paymentRoutes);
+app.use("/api/v1/uploads", attachRedis(redisClient), uploadRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new APIError(`Route ${req.originalUrl} not found`, 404));
@@ -124,6 +128,10 @@ async function startServer() {
     await connectToDatabase();
     await connectToRabbitMq();
     await consumeMessage();
+    await initMinio();
+
+    // Start background jobs (CDN sync)
+    startAllJobs();
 
     logger.info(
       `📽️ Live-Video-Streaming-Service fully initialized on port ${PORT}`,
@@ -150,6 +158,7 @@ process.on("unhandledRejection", (err) => {
 
 process.on("SIGINT", () => {
   logger.info("SIGINT signal received");
+  stopAllJobs();
   process.exit(0);
 });
 

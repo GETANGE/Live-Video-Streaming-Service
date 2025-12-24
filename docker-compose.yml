@@ -78,6 +78,27 @@ services:
       networks:
         - live-video-streaming-service
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio-streaming
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - live-video-streaming-service
+
 networks:
   live-video-streaming-service:
     driver: bridge
@@ -86,3 +107,4 @@ volumes:
   redis_data:
   postgres_data:
   rabbitmq_data:
+  minio_data:

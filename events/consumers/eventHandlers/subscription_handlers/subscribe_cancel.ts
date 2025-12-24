@@ -1,11 +1,6 @@
 import * as subscriptionService from "@services/subscription.service";
+import { UnsubscribePayload } from "@types";
 import logger from "@utils/logger";
-
-interface UnsubscribePayload {
-  userId: string;
-  channelId: string;
-  timestamp: string;
-}
 
 export const handleSubscriptionCancelled = async (payload: UnsubscribePayload) => {
   try {
