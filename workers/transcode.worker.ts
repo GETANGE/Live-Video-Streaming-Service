@@ -1,19 +1,7 @@
 import { parentPort, workerData } from "worker_threads";
+import { TranscodeTask } from "@types";
 import ffmpeg from "fluent-ffmpeg";
 import { join } from "path";
-
-interface TranscodeTask {
-  inputPath: string;
-  outputDir: string;
-  preset: {
-    name: string;
-    width: number;
-    height: number;
-    bitrate: string;
-    audioBitrate: string;
-  };
-  segmentDuration: number;
-}
 
 const HLS_PLAYLIST_TYPE = "vod";
 
@@ -56,7 +44,10 @@ const task = workerData as TranscodeTask;
 
 transcode(task)
   .then(() => {
-    parentPort?.postMessage({ type: "done", quality: task.preset.name });
+    parentPort?.postMessage({
+      type: "done",
+      quality: task.preset.name,
+    });
   })
   .catch((error) => {
     parentPort?.postMessage({

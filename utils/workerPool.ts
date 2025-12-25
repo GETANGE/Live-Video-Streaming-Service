@@ -1,26 +1,9 @@
 import { Worker } from "worker_threads";
+import { TranscodeTask, WorkerResult} from "@types";
 import { cpus } from "os";
 import { join } from "path";
 import logger from "@utils/logger";
 
-interface TranscodeTask {
-  inputPath: string;
-  outputDir: string;
-  preset: {
-    name: string;
-    width: number;
-    height: number;
-    bitrate: string;
-    audioBitrate: string;
-  };
-  segmentDuration: number;
-}
-
-interface WorkerResult {
-  quality: string;
-  success: boolean;
-  error?: string;
-}
 
 type ProgressCallback = (quality: string, percent: number) => void;
 

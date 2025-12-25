@@ -200,4 +200,36 @@ export interface VideoDeletePayload {
   timestamp: string;
 }
 
+export interface TranscodeTask {
+  inputPath: string;
+  outputDir: string;
+  preset: {
+    name: string;
+    width: number;
+    height: number;
+    bitrate: string;
+    audioBitrate: string;
+  };
+  segmentDuration: number;
+}
+
+export interface WorkerResult {
+  quality: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface TranscodeTask {
+  inputPath: string;
+  outputDir: string;
+  preset: {
+    name: string;
+    width: number;
+    height: number;
+    bitrate: string;
+    audioBitrate: string;
+  };
+  segmentDuration: number;
+}
+
 export {};
