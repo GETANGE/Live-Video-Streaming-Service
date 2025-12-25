@@ -11,7 +11,7 @@ import {
 import { transcodeInParallel, ProgressCallback } from "@utils/workerPool";
 
 // HLS settings
-const HLS_SEGMENT_DURATION = 6;
+const HLS_SEGMENT_DURATION = 10;
 
 // Quality presets
 const QUALITY_PRESETS = [

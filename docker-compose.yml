@@ -1,4 +1,112 @@
 services:
+  # ─────────────────────────────────────────────────────
+  # App Instances (Load Balanced)
+  # ─────────────────────────────────────────────────────
+  app1:
+    build: .
+    container_name: app1
+    env_file: .env
+    environment:
+      - INSTANCE_ID=app1
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - video_temp:/tmp/video-processing
+    networks:
+      - live-video-streaming-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app2:
+    build: .
+    container_name: app2
+    env_file: .env
+    environment:
+      - INSTANCE_ID=app2
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - video_temp:/tmp/video-processing
+    networks:
+      - live-video-streaming-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app3:
+    build: .
+    container_name: app3
+    env_file: .env
+    environment:
+      - INSTANCE_ID=app3
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - video_temp:/tmp/video-processing
+    networks:
+      - live-video-streaming-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────
+  # Nginx Load Balancer
+  # ─────────────────────────────────────────────────────
+  nginx:
+    image: nginx:latest
+    container_name: nginx_load_balancer
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - app1
+      - app2
+      - app3
+    networks:
+      - live-video-streaming-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────
+  # Redis
+  # ─────────────────────────────────────────────────────
   redis:
     image: redis:latest
     container_name: redis-streaming
@@ -15,22 +123,6 @@ services:
       - live-video-streaming-service
     volumes:
       - redis_data:/data
-
-  nginx:
-    image: nginx:latest
-    container_name: nginx_load_balancer
-    ports:
-      - "8081:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    restart: unless-stopped
-    networks:
-      - live-video-streaming-service
-    healthcheck:
-        test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
   
   postgres:
     image: postgres:18
@@ -108,3 +200,5 @@ volumes:
   postgres_data:
   rabbitmq_data:
   minio_data:
+  video_temp:
+  nginx_cache:
