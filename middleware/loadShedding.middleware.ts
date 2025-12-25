@@ -54,7 +54,6 @@ export const metricsHandler = (_req: Request, res: Response) => {
     },
     socket: {
       connectedClients: socketMetrics.connectedSockets,
-      queueLength: socketMetrics.queueLength,
     },
     queues: getQueueMetrics(),
     circuitBreakers: {

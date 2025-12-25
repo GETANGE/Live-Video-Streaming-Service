@@ -145,29 +145,8 @@ export const publishSubscriptionEventAsync = (
 
 /**
  * Send a real-time notification to a user
- * @param userId - User ID to notify
- * @param notification - Notification data
  */
-export const notifyUser = async (
-  userId: string,
-  notification: {
-    type: string;
-    message: string;
-    [key: string]: any;
-  }
-): Promise<void> => {
-  await emitNotification(userId, {
-    ...notification,
-    timestamp: new Date().toISOString(),
-  });
-};
-
-/**
- * Send a real-time notification asynchronously
- * @param userId - User ID to notify
- * @param notification - Notification data
- */
-export const notifyUserAsync = (
+export const notifyUser = (
   userId: string,
   notification: {
     type: string;
@@ -178,34 +157,13 @@ export const notifyUserAsync = (
   emitNotification(userId, {
     ...notification,
     timestamp: new Date().toISOString(),
-  }).catch((err) => logger.error(`Failed to notify user ${userId}:`, err));
-};
-
-/**
- * Notify a channel room (all connected subscribers)
- * @param channelId - Channel ID
- * @param notification - Notification data
- */
-export const notifyChannel = async (
-  channelId: string,
-  notification: {
-    type: string;
-    [key: string]: any;
-  }
-): Promise<void> => {
-  await emitNotification(`channel:${channelId}`, {
-    ...notification,
-    channelId,
-    timestamp: new Date().toISOString(),
   });
 };
 
 /**
- * Notify channel asynchronously
- * @param channelId - Channel ID
- * @param notification - Notification data
+ * Notify a channel room (all connected subscribers)
  */
-export const notifyChannelAsync = (
+export const notifyChannel = (
   channelId: string,
   notification: {
     type: string;
@@ -216,39 +174,18 @@ export const notifyChannelAsync = (
     ...notification,
     channelId,
     timestamp: new Date().toISOString(),
-  }).catch((err) => logger.error(`Failed to notify channel ${channelId}:`, err));
-};
-
-/**
- * Notify channel owner of a subscriber action
- * @param channelId - Channel ID
- * @param subscriberId - Subscriber user ID
- * @param action - Action type
- */
-export const notifyChannelOwner = async (
-  channelId: string,
-  subscriberId: string,
-  action: "subscribed" | "unsubscribed"
-): Promise<void> => {
-  await notifyChannel(channelId, {
-    type: "SUBSCRIBER_UPDATE",
-    action,
-    subscriberId,
   });
 };
 
 /**
- * Notify channel owner asynchronously
- * @param channelId - Channel ID
- * @param subscriberId - Subscriber user ID
- * @param action - Action type
+ * Notify channel owner of a subscriber action
  */
-export const notifyChannelOwnerAsync = (
+export const notifyChannelOwner = (
   channelId: string,
   subscriberId: string,
   action: "subscribed" | "unsubscribed"
 ): void => {
-  notifyChannelAsync(channelId, {
+  notifyChannel(channelId, {
     type: "SUBSCRIBER_UPDATE",
     action,
     subscriberId,

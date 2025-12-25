@@ -6,7 +6,6 @@ export const createSTKPUSH_request = async (
   password: string,
   amount: number,
   phoneNumber: string,
-  userId: string,
 ) => {
 
   const stkRequest: STKPushRequest = {
@@ -19,7 +18,7 @@ export const createSTKPUSH_request = async (
     PartyB: mpesaConfig.shortCode,
     PhoneNumber: phoneNumber,
     CallBackURL: mpesaConfig.callbackUrl,
-    AccountReference: `USER-${userId}`,
+    AccountReference: `StreamApp`,
     TransactionDesc: "Subscription Payment",
   };
 

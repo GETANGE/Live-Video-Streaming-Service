@@ -8,6 +8,7 @@ import {
   getPublicUrl,
 } from "@helpers/hls.helper-functions";
 import { processVideoToHLS } from "@services/chunker.service";
+import { ProgressCallback } from "@utils/workerPool";
 import {
   syncThumbnailToCDN,
   syncVideoToCDN,
@@ -68,11 +69,12 @@ export const uploadRawVideo = async (
 export const processVideo = async (
   videoId: string,
   buffer: Buffer,
+  onProgress?: ProgressCallback,
 ): Promise<UploadResult> => {
   logger.info(`Processing video ${videoId} with FFmpeg`);
 
   // Transcode to HLS
-  const { masterPlaylist, variants, thumbnailBuffer, duration } = await processVideoToHLS(buffer, videoId);
+  const { masterPlaylist, variants, thumbnailBuffer, duration } = await processVideoToHLS(buffer, videoId, onProgress);
 
   // Upload master playlist
   const masterPath = `hls/${videoId}/master.m3u8`;
@@ -118,6 +120,7 @@ export const processVideo = async (
 export const processVideoFromStorage = async (
   videoId: string,
   minioFileName: string,
+  onProgress?: ProgressCallback,
 ): Promise<UploadResult> => {
   logger.info(`Fetching video ${videoId} from MinIO for processing`);
 
@@ -132,7 +135,7 @@ export const processVideoFromStorage = async (
   const buffer = Buffer.concat(chunks);
 
   // Process the video
-  return processVideo(videoId, buffer);
+  return processVideo(videoId, buffer, onProgress);
 };
 
 // Delete video and all HLS files from MinIO + CDN

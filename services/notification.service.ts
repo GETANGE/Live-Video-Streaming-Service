@@ -4,7 +4,7 @@ import * as repo from "@repository/notification.repository";
 import {
   EVENT_TYPES,
   publishSubscriptionEventAsync,
-  notifyChannelOwnerAsync,
+  notifyChannelOwner,
   notifyUser,
 } from "@helpers/event.helper";
 
@@ -25,7 +25,7 @@ export const notifyNewSubscription = async (subscription: Subscription) => {
   });
 
   publishSubscriptionEventAsync(SUBSCRIPTION_EVENTS.SUBSCRIBED, subscription);
-  notifyChannelOwnerAsync(subscription.channelId, subscription.userId, "subscribed");
+  notifyChannelOwner(subscription.channelId, subscription.userId, "subscribed");
 };
 
 // Notify on subscription renewal
@@ -62,7 +62,7 @@ export const sendExpirationReminders = async (subscriptions: Subscription[]) => 
     publishSubscriptionEventAsync(SUBSCRIPTION_EVENTS.EXPIRING_SOON, subscription);
 
     if (subscription.user?.id) {
-      await notifyUser(subscription.user.id, {
+      notifyUser(subscription.user.id, {
         type: "SUBSCRIPTION_EXPIRING",
         message: `Your subscription to ${subscription.channel?.name} expires soon`,
         channelId: subscription.channelId,

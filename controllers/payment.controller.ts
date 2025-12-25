@@ -33,7 +33,6 @@ export const initiateSTK_push = async (
       password,
       amount,
       phoneNumber,
-      userId,
     );
 
     const response = await sendSTKPUSH_request(stkRequest, accessToken);

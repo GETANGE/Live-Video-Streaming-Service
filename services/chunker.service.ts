@@ -8,7 +8,7 @@ import {
   cleanupTempDir,
   TEMP_DIR,
 } from "@services/ffmpeg.service";
-import { transcodeVariant } from "@services/video-encoder.service";
+import { transcodeInParallel, ProgressCallback } from "@utils/workerPool";
 
 // HLS settings
 const HLS_SEGMENT_DURATION = 6;
@@ -26,41 +26,54 @@ interface HLSOutput {
   variants: { quality: string; playlist: string; segments: string[] }[];
 }
 
-// Transcode video to HLS with multiple quality variants
+// Transcode video to HLS with multiple quality variants (using worker threads)
 export const transcodeToHLS = async (
   inputPath: string,
   videoId: string,
+  onProgress?: ProgressCallback,
 ): Promise<HLSOutput> => {
   const workDir = join(TEMP_DIR, videoId);
-  const variants: HLSOutput["variants"] = [];
 
-  logger.info(`Starting HLS transcode for ${videoId}`);
+  logger.info(`Starting parallel HLS transcode for ${videoId}`);
 
-  for (const preset of QUALITY_PRESETS) {
-    const variantDir = join(workDir, preset.name);
-    await mkdir(variantDir, { recursive: true });
+  // Create output directories for all variants
+  const tasks = await Promise.all(
+    QUALITY_PRESETS.map(async (preset) => {
+      const variantDir = join(workDir, preset.name);
+      await mkdir(variantDir, { recursive: true });
+      return {
+        inputPath,
+        outputDir: variantDir,
+        preset,
+        segmentDuration: HLS_SEGMENT_DURATION,
+      };
+    }),
+  );
 
-    logger.info(`Transcoding ${videoId} to ${preset.name}`);
-    await transcodeVariant(inputPath, variantDir, preset, HLS_SEGMENT_DURATION);
+  // Transcode all variants in parallel using worker threads
+  await transcodeInParallel(tasks, onProgress);
 
-    const files = await readdir(variantDir);
-    const segments = files.filter((f) => f.endsWith(".ts"));
+  // Collect results
+  const variants: HLSOutput["variants"] = await Promise.all(
+    QUALITY_PRESETS.map(async (preset) => {
+      const variantDir = join(workDir, preset.name);
+      const files = await readdir(variantDir);
+      const segments = files.filter((f) => f.endsWith(".ts"));
 
-    variants.push({
-      quality: preset.name,
-      playlist: join(variantDir, "playlist.m3u8"),
-      segments: segments.map((s) => join(variantDir, s)),
-    });
-
-    logger.info(`Completed ${preset.name} for ${videoId}`);
-  }
+      return {
+        quality: preset.name,
+        playlist: join(variantDir, "playlist.m3u8"),
+        segments: segments.map((s) => join(variantDir, s)),
+      };
+    }),
+  );
 
   // Generate master playlist
   const masterPlaylistPath = join(workDir, "master.m3u8");
   const masterContent = generateMasterPlaylist(variants);
   await writeFile(masterPlaylistPath, masterContent);
 
-  logger.info(`HLS transcode complete for ${videoId}`);
+  logger.info(`Parallel HLS transcode complete for ${videoId}`);
 
   return { masterPlaylist: masterPlaylistPath, variants };
 };
@@ -85,6 +98,7 @@ const generateMasterPlaylist = (
 export const processVideoToHLS = async (
   inputBuffer: Buffer,
   videoId: string,
+  onProgress?: ProgressCallback,
 ): Promise<{
   masterPlaylist: Buffer;
   variants: {
@@ -107,7 +121,7 @@ export const processVideoToHLS = async (
     await generateThumbnail(inputPath, thumbnailPath);
     const thumbnailBuffer = await readFile(thumbnailPath);
 
-    const hlsOutput = await transcodeToHLS(inputPath, videoId);
+    const hlsOutput = await transcodeToHLS(inputPath, videoId, onProgress);
 
     const masterPlaylist = await readFile(hlsOutput.masterPlaylist);
 
