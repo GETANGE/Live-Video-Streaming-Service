@@ -87,7 +87,7 @@ services:
     image: nginx:latest
     container_name: nginx_load_balancer
     ports:
-      - "80:80"
+      - "3000:3000"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx_cache:/var/cache/nginx
@@ -99,7 +99,7 @@ services:
       - live-video-streaming-service
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
