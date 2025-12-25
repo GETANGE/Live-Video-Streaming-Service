@@ -232,4 +232,35 @@ export interface TranscodeTask {
   segmentDuration: number;
 }
 
+// Channel payloads
+export interface ChannelCreatedPayload {
+  channelId: string;
+  ownerId: string;
+  name: string;
+  description?: string;
+  timestamp: string;
+}
+
+export interface ChannelUpdatedPayload {
+  channelId: string;
+  ownerId: string;
+  name?: string;
+  description?: string;
+  timestamp: string;
+}
+
+export interface ChannelDeletedPayload {
+  channelId: string;
+  ownerId: string;
+  timestamp: string;
+}
+
+export interface PendingSubscription {
+  userId: string;
+  channelId: string;
+  amount: number;
+  phoneNumber: string;
+  createdAt: string;
+}
+
 export {};

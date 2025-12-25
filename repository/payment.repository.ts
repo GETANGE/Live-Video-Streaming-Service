@@ -40,6 +40,8 @@ export const createPayment = async (data: {
   amount: number;
   method: string;
   transactionId?: string;
+  channelId?: string;
+  purpose?: string;
 }) => {
   return prisma.payment.create({
     data: {
@@ -47,6 +49,8 @@ export const createPayment = async (data: {
       amount: data.amount,
       method: data.method,
       transactionId: data.transactionId,
+      channelId: data.channelId,
+      purpose: data.purpose,
       status: "COMPLETED",
     },
   });

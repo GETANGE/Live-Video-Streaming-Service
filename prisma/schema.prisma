@@ -52,6 +52,7 @@ model User {
   videos        Video[]
   notifications Notification[]
   subscription  Subscription[]
+  channels      Channel[]
 
   @@index([createdAt])
 }
@@ -131,13 +132,19 @@ model Payment {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id])
-  transactions Transaction[]
+  // Channel subscription payment tracking
+  channelId     String?
+  purpose       String?       // "CHANNEL_SUBSCRIPTION", "TIP", etc.
+
+  user          User           @relation(fields: [userId], references: [id])
+  transactions  Transaction[]
+  subscriptions Subscription[]
 
   @@index([userId])
   @@index([status])
   @@index([method])
   @@index([createdAt])
+  @@index([channelId])
 }
 
 // Notifications
@@ -195,16 +202,25 @@ model UserDevice {
 
 // Channels
 model Channel {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(uuid())
+  name              String   @unique
+  description       String?
+  ownerId           String
+  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Paid channel settings
+  isPaid            Boolean  @default(false)
+  subscriptionPrice Float?
+  currency          String   @default("KES")
 
   subscriptions Subscription[]
   videos        Video[]
 
   @@index([name])
+  @@index([ownerId])
+  @@index([isPaid])
 }
 
 // Subscriptions
@@ -218,10 +234,16 @@ model Subscription {
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id])
-  channel Channel @relation(fields: [channelId], references: [id])
+  // Payment tracking for paid channels
+  paymentId   String?
+  amountPaid  Float?
+
+  user    User     @relation(fields: [userId], references: [id])
+  channel Channel  @relation(fields: [channelId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
 
   @@unique([userId, channelId])
   @@index([status])
   @@index([startDate])
+  @@index([paymentId])
 }

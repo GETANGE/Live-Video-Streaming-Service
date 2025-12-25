@@ -44,6 +44,28 @@ export const createSubscription = async (
   });
 };
 
+// Create subscription with payment (for paid channels)
+export const createSubscriptionWithPayment = async (
+  userId: string,
+  channelId: string,
+  paymentId: string,
+  amountPaid: number,
+  endDate?: Date
+) => {
+  return prisma.subscription.create({
+    data: {
+      userId,
+      channelId,
+      status: "ACTIVE",
+      startDate: new Date(),
+      endDate,
+      paymentId,
+      amountPaid,
+    },
+    include: { channel: true, user: true, payment: true },
+  });
+};
+
 // Cancel subscription (soft delete)
 export const cancelSubscription = async (id: string) => {
   return prisma.subscription.update({

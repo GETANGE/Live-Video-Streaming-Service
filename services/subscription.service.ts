@@ -6,6 +6,7 @@ import {
   invalidateSubscriptionCache,
 } from "@helpers/cacheInvalidations/subscriptionCacheInvalidation";
 import * as repo from "@repository/subscription.repository";
+import * as channelRepo from "@repository/channel.repository";
 import { PaginationParams } from "@types";
 import * as notificationService from "@services/notification.service";
 
@@ -27,6 +28,20 @@ export const subscribe = async (
   channelId: string,
   endDate?: Date,
 ) => {
+  // Check if channel exists and if it's paid
+  const channel = await channelRepo.getChannelById(channelId);
+  if (!channel) {
+    throw new APIError("Channel not found", 404);
+  }
+
+  // If channel is paid, require payment first
+  if (channel.isPaid) {
+    throw new APIError(
+      `This is a paid channel. Subscription costs ${channel.currency} ${channel.subscriptionPrice}. Use /api/v1/payments/subscribe-channel to pay and subscribe.`,
+      402 // Payment Required
+    );
+  }
+
   // Check for existing subscription
   const existing = await repo.findSubscription(userId, channelId);
 
@@ -52,6 +67,48 @@ export const subscribe = async (
   await notificationService.notifyNewSubscription(subscription);
 
   logger.info(`Subscription ${subscription.id} created`);
+  return subscription;
+};
+
+// Subscribe with payment (called after successful payment for paid channels)
+export const subscribeWithPayment = async (
+  userId: string,
+  channelId: string,
+  paymentId: string,
+  amountPaid: number,
+  endDate?: Date,
+) => {
+  // Check for existing subscription
+  const existing = await repo.findSubscription(userId, channelId);
+
+  if (existing) {
+    if (existing.status === "ACTIVE") {
+      throw new APIError("Already subscribed to this channel", 400);
+    }
+
+    // Reactivate cancelled/expired subscription
+    const subscription = await repo.reactivateSubscription(existing.id, endDate);
+    await invalidateSubscriptionCache();
+
+    await notificationService.notifySubscriptionRenewed(subscription);
+
+    logger.info(`Paid subscription ${subscription.id} reactivated`);
+    return subscription;
+  }
+
+  // Create new subscription with payment info
+  const subscription = await repo.createSubscriptionWithPayment(
+    userId,
+    channelId,
+    paymentId,
+    amountPaid,
+    endDate,
+  );
+  await invalidateSubscriptionCache();
+
+  await notificationService.notifyNewSubscription(subscription);
+
+  logger.info(`Paid subscription ${subscription.id} created for ${amountPaid}`);
   return subscription;
 };
 

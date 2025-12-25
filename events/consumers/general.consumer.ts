@@ -11,6 +11,8 @@ import { handleNotificationMarkAllRead } from "./eventHandlers/notification_hand
 import { handleNotificationMarkRead } from "./eventHandlers/notification_handlers/notification_read";
 import { handlePaymentInitiated } from "./eventHandlers/payment_handlers/payment_initiated";
 import { handlePaymentCallback } from "./eventHandlers/payment_handlers/payment_callback";
+import { handleChannelCreated } from "./eventHandlers/channel_handlers/channel_created";
+import { handleChannelUpdated } from "./eventHandlers/channel_handlers/channel_updated";
 import RabbitMQConfig, { QUEUES } from "@constants/constant";
 import logger from "@utils/logger";
 
@@ -34,6 +36,9 @@ const generalEventHandlers: Record<string, (payload: any) => Promise<void>> = {
   // Payment events
   PAYMENT_INITIATED: handlePaymentInitiated,
   PAYMENT_CALLBACK: handlePaymentCallback,
+  // Channel events (lightweight)
+  CHANNEL_CREATED: handleChannelCreated,
+  CHANNEL_UPDATED: handleChannelUpdated,
 };
 
 let processedCount = 0;

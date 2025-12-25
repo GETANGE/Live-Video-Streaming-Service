@@ -19,12 +19,13 @@ export const QUEUES = {
   },
 } as const;
 
-// Event types routed to video queue
+// Event types routed to video queue (heavy operations)
 export const VIDEO_EVENTS = [
   "VIDEO_PROCESS",
   "VIDEO_TRANSCODE",
   "VIDEO_THUMBNAIL",
   "VIDEO_DELETE",
+  "CHANNEL_DELETED",
 ] as const;
 
 const RabbitMQConfig = {

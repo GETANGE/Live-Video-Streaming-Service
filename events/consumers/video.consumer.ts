@@ -2,16 +2,18 @@ import { getVideoChannel, getRabbitMQChannel } from "@configs/rabbitMQ.config";
 import { handleVideoProcess } from "./eventHandlers/video_handlers/video_process";
 import { handleVideoThumbnail } from "./eventHandlers/video_handlers/video_thumbnail";
 import { handleVideoDelete } from "./eventHandlers/video_handlers/video_delete";
+import { handleChannelDeleted } from "./eventHandlers/channel_handlers/channel_deleted";
 import RabbitMQConfig, { QUEUES } from "@constants/constant";
 import logger from "@utils/logger";
 
 const MAX_RETRIES = 3;
 
-// Video-specific event handlers
+// Video-specific event handlers (heavy operations)
 const videoEventHandlers: Record<string, (payload: any) => Promise<void>> = {
   VIDEO_PROCESS: handleVideoProcess,
   VIDEO_THUMBNAIL: handleVideoThumbnail,
   VIDEO_DELETE: handleVideoDelete,
+  CHANNEL_DELETED: handleChannelDeleted,
 };
 
 let activeJobs = 0;

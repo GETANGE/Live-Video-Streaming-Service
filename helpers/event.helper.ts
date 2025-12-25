@@ -29,6 +29,11 @@ export const EVENT_TYPES = {
   VIDEO_UPLOADED: "VIDEO_UPLOADED",
   VIDEO_PROCESSED: "VIDEO_PROCESSED",
   VIDEO_DELETED: "VIDEO_DELETED",
+
+  // Channel events
+  CHANNEL_CREATED: "CHANNEL_CREATED",
+  CHANNEL_UPDATED: "CHANNEL_UPDATED",
+  CHANNEL_DELETED: "CHANNEL_DELETED",
 } as const;
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
@@ -189,5 +194,49 @@ export const notifyChannelOwner = (
     type: "SUBSCRIBER_UPDATE",
     action,
     subscriberId,
+  });
+};
+
+/**
+ * Publish a channel event
+ */
+export const publishChannelEvent = async (
+  eventType: EventType,
+  channel: {
+    id: string;
+    ownerId: string;
+    name?: string;
+    description?: string;
+  }
+): Promise<void> => {
+  await publishEvent(
+    eventType,
+    {
+      channelId: channel.id,
+      ownerId: channel.ownerId,
+      name: channel.name,
+      description: channel.description,
+    },
+    { priority: EVENT_PRIORITY.MEDIUM }
+  );
+};
+
+/**
+ * Publish a channel event asynchronously
+ */
+export const publishChannelEventAsync = (
+  eventType: EventType,
+  channel: {
+    id: string;
+    ownerId: string;
+    name?: string;
+    description?: string;
+  }
+): void => {
+  publishEventAsync(eventType, {
+    channelId: channel.id,
+    ownerId: channel.ownerId,
+    name: channel.name,
+    description: channel.description,
   });
 };

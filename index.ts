@@ -29,6 +29,7 @@ import subscriptionRoutes from "@routes/subscription.route";
 import notificationRoutes from "@routes/notification.route";
 import paymentRoutes from "@routes/payment.route";
 import uploadRoutes from "@routes/upload.route";
+import channelRoutes from "@routes/channel.route";
 import { attachRedis } from "@middleware/attatchRedis";
 import { initMinio } from "@configs/minio.config";
 import { initSocket } from "@configs/socket.config";
@@ -109,6 +110,7 @@ app.use("/api/v1/subscriptions", attachRedis(redisClient), subscriptionRoutes);
 app.use("/api/v1/notifications", attachRedis(redisClient), notificationRoutes);
 app.use("/api/v1/payments", attachRedis(redisClient), paymentRoutes);
 app.use("/api/v1/uploads", attachRedis(redisClient), uploadRoutes);
+app.use("/api/v1/channels", attachRedis(redisClient), channelRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new APIError(`Route ${req.originalUrl} not found`, 404));
