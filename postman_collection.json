@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Live Video Streaming Service API",
-    "description": "API for video streaming with MinIO storage and Cloudinary CDN",
+    "description": "API for video streaming with MinIO storage, Cloudinary CDN, M-Pesa payments, and channel subscriptions",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -38,9 +38,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/auth/google",
+              "raw": "{{baseUrl}}/users/google",
               "host": ["{{baseUrl}}"],
-              "path": ["auth", "google"]
+              "path": ["users", "google"]
             },
             "description": "Redirects to Google OAuth login page"
           }
@@ -51,11 +51,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/auth/google/callback",
+              "raw": "{{baseUrl}}/users/google/callback",
               "host": ["{{baseUrl}}"],
-              "path": ["auth", "google", "callback"]
+              "path": ["users", "google", "callback"]
             },
-            "description": "Google OAuth callback - returns JWT token"
+            "description": "Google OAuth callback - returns JWT tokens (accessToken, refreshToken)"
           }
         },
         {
@@ -73,12 +73,240 @@
               "raw": "{\n  \"email\": \"user@example.com\",\n  \"username\": \"newusername\",\n  \"phoneNumber\": \"254712345678\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/profile/update",
+              "raw": "{{baseUrl}}/users/profile/update",
               "host": ["{{baseUrl}}"],
-              "path": ["auth", "profile", "update"]
+              "path": ["users", "profile", "update"]
             },
-            "description": "Update user profile (queued)"
+            "description": "Update user profile (queued via RabbitMQ). Returns 202 Accepted."
           }
+        }
+      ]
+    },
+    {
+      "name": "Channels",
+      "description": "Channel management - create, update, delete channels. Channels can be free or paid.",
+      "item": [
+        {
+          "name": "Public",
+          "item": [
+            {
+              "name": "Get All Channels",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels"]
+                },
+                "description": "Get all channels"
+              }
+            },
+            {
+              "name": "Search Channels",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels/search?q=gaming",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", "search"],
+                  "query": [
+                    { "key": "q", "value": "gaming" }
+                  ]
+                },
+                "description": "Search channels by name"
+              }
+            },
+            {
+              "name": "Get Trending Channels",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels/trending?limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", "trending"],
+                  "query": [
+                    { "key": "limit", "value": "10" }
+                  ]
+                },
+                "description": "Get trending channels based on recent subscriber growth"
+              }
+            },
+            {
+              "name": "Get Channel by ID",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                },
+                "description": "Get channel details including isPaid, subscriptionPrice, currency"
+              }
+            },
+            {
+              "name": "Get Channel Videos",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels/:id/videos",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", ":id", "videos"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                },
+                "description": "Get all videos from a channel"
+              }
+            },
+            {
+              "name": "Get Channel Stats",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels/:id/stats",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", ":id", "stats"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                },
+                "description": "Get channel statistics (subscriber count, video count, total duration)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Authenticated",
+          "item": [
+            {
+              "name": "Create Channel",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"My Awesome Channel\",\n  \"description\": \"Channel description here\",\n  \"isPaid\": false,\n  \"subscriptionPrice\": null,\n  \"currency\": \"KES\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/channels",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels"]
+                },
+                "description": "Create a new channel. Set isPaid=true and subscriptionPrice for paid channels."
+              }
+            },
+            {
+              "name": "Create Paid Channel",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Premium Gaming Channel\",\n  \"description\": \"Exclusive gaming content\",\n  \"isPaid\": true,\n  \"subscriptionPrice\": 500,\n  \"currency\": \"KES\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/channels",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels"]
+                },
+                "description": "Create a paid channel. Users must pay to subscribe."
+              }
+            },
+            {
+              "name": "Get My Channel",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", "me"]
+                },
+                "description": "Get the authenticated user's channel"
+              }
+            },
+            {
+              "name": "Update Channel",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Channel Name\",\n  \"description\": \"Updated description\",\n  \"isPaid\": true,\n  \"subscriptionPrice\": 1000,\n  \"currency\": \"KES\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/channels/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                },
+                "description": "Update channel. Can change from free to paid or vice versa."
+              }
+            },
+            {
+              "name": "Delete Channel",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/channels/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["channels", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "channel-uuid-here"
+                    }
+                  ]
+                },
+                "description": "Delete channel (queued via VIDEO queue). Deletes all videos from MinIO/CDN."
+              }
+            }
+          ]
         }
       ]
     },
@@ -144,7 +372,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["uploads", "video"]
             },
-            "description": "Upload video for HLS processing (max 50MB). Stored in MinIO, thumbnails synced to Cloudinary CDN via cron job."
+            "description": "Upload video for HLS processing (max 500MB). Stored in MinIO, transcoded to HLS with adaptive bitrate (360p, 480p, 720p, 1080p)."
           }
         },
         {
@@ -218,6 +446,7 @@
     },
     {
       "name": "Subscriptions",
+      "description": "Channel subscription management. Free channels allow direct subscription. Paid channels require M-Pesa payment first.",
       "item": [
         {
           "name": "Public",
@@ -292,7 +521,7 @@
           "name": "Authenticated",
           "item": [
             {
-              "name": "Subscribe to Channel",
+              "name": "Subscribe to Channel (Free)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -315,7 +544,8 @@
                       "value": "channel-uuid-here"
                     }
                   ]
-                }
+                },
+                "description": "Subscribe to a FREE channel. For PAID channels, returns 402 Payment Required with instructions to use /payments/subscribe-channel"
               }
             },
             {
@@ -389,7 +619,8 @@
                     { "key": "limit", "value": "20" },
                     { "key": "active", "value": "true" }
                   ]
-                }
+                },
+                "description": "Get user's subscriptions. Includes amountPaid for paid channel subscriptions."
               }
             },
             {
@@ -514,6 +745,7 @@
     },
     {
       "name": "Notifications",
+      "description": "User notifications. Write operations are processed asynchronously via RabbitMQ.",
       "item": [
         {
           "name": "Get All Notifications",
@@ -524,7 +756,8 @@
               "raw": "{{baseUrl}}/notifications",
               "host": ["{{baseUrl}}"],
               "path": ["notifications"]
-            }
+            },
+            "description": "Get all notifications for the authenticated user (newest first)"
           }
         },
         {
@@ -536,7 +769,8 @@
               "raw": "{{baseUrl}}/notifications/unread",
               "host": ["{{baseUrl}}"],
               "path": ["notifications", "unread"]
-            }
+            },
+            "description": "Get only unread notifications"
           }
         },
         {
@@ -548,7 +782,8 @@
               "raw": "{{baseUrl}}/notifications/read-all",
               "host": ["{{baseUrl}}"],
               "path": ["notifications", "read-all"]
-            }
+            },
+            "description": "Mark all notifications as read (queued). Returns 202 Accepted."
           }
         },
         {
@@ -566,7 +801,8 @@
                   "value": "notification-uuid-here"
                 }
               ]
-            }
+            },
+            "description": "Mark a single notification as read (queued). Returns 202 Accepted."
           }
         },
         {
@@ -584,13 +820,15 @@
                   "value": "notification-uuid-here"
                 }
               ]
-            }
+            },
+            "description": "Delete a notification (queued). Returns 202 Accepted."
           }
         }
       ]
     },
     {
       "name": "Payments (M-Pesa)",
+      "description": "M-Pesa STK Push payments. Includes general payments and channel subscription payments.",
       "item": [
         {
           "name": "Initiate STK Push",
@@ -611,7 +849,29 @@
               "host": ["{{baseUrl}}"],
               "path": ["payments", "initiate"]
             },
-            "description": "Initiates M-Pesa STK Push to user's phone"
+            "description": "Initiates generic M-Pesa STK Push to user's phone"
+          }
+        },
+        {
+          "name": "Subscribe to Paid Channel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelId\": \"channel-uuid-here\",\n  \"phoneNumber\": \"254712345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/subscribe-channel",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "subscribe-channel"]
+            },
+            "description": "Pay for a paid channel subscription via M-Pesa. Amount is fetched from channel's subscriptionPrice. After successful payment, subscription is automatically created."
           }
         },
         {
@@ -623,7 +883,8 @@
               "raw": "{{baseUrl}}/payments/history",
               "host": ["{{baseUrl}}"],
               "path": ["payments", "history"]
-            }
+            },
+            "description": "Get user's payment and transaction history"
           }
         },
         {
@@ -639,20 +900,21 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"Body\": {\n    \"stkCallback\": {\n      \"MerchantRequestID\": \"29115-34620561-1\",\n      \"CheckoutRequestID\": \"ws_CO_191220231234567890\",\n      \"ResultCode\": 0,\n      \"ResultDesc\": \"The service request is processed successfully.\",\n      \"CallbackMetadata\": {\n        \"Item\": [\n          {\"Name\": \"Amount\", \"Value\": 100},\n          {\"Name\": \"MpesaReceiptNumber\", \"Value\": \"NLJ7RT61SV\"},\n          {\"Name\": \"TransactionDate\", \"Value\": 20231215120000},\n          {\"Name\": \"PhoneNumber\", \"Value\": 254712345678}\n        ]\n      }\n    }\n  }\n}"
+              "raw": "{\n  \"Body\": {\n    \"stkCallback\": {\n      \"MerchantRequestID\": \"29115-34620561-1\",\n      \"CheckoutRequestID\": \"ws_CO_191220231234567890\",\n      \"ResultCode\": 0,\n      \"ResultDesc\": \"The service request is processed successfully.\",\n      \"CallbackMetadata\": {\n        \"Item\": [\n          {\"Name\": \"Amount\", \"Value\": 500},\n          {\"Name\": \"MpesaReceiptNumber\", \"Value\": \"NLJ7RT61SV\"},\n          {\"Name\": \"TransactionDate\", \"Value\": 20231215120000},\n          {\"Name\": \"PhoneNumber\", \"Value\": 254712345678}\n        ]\n      }\n    }\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/payments/callback",
               "host": ["{{baseUrl}}"],
               "path": ["payments", "callback"]
             },
-            "description": "M-Pesa callback webhook - for testing only"
+            "description": "M-Pesa callback webhook (called by Safaricom). For testing, ResultCode=0 means success, other codes indicate failure."
           }
         }
       ]
     },
     {
       "name": "Health & Metrics",
+      "description": "Server health checks and metrics endpoints",
       "item": [
         {
           "name": "Health Check",
@@ -664,7 +926,8 @@
               "raw": "{{host}}/health",
               "host": ["{{host}}"],
               "path": ["health"]
-            }
+            },
+            "description": "Simple health check - returns 'healthy' if server is running"
           }
         },
         {
@@ -678,7 +941,7 @@
               "host": ["{{host}}"],
               "path": ["metrics"]
             },
-            "description": "Returns memory usage and socket connection stats"
+            "description": "Returns detailed metrics: memory usage, socket connections, queue stats, circuit breaker states (Cloudinary, M-Pesa, MinIO)"
           }
         },
         {
@@ -691,7 +954,8 @@
               "raw": "{{host}}/ready",
               "host": ["{{host}}"],
               "path": ["ready"]
-            }
+            },
+            "description": "Kubernetes readiness probe"
           }
         }
       ]
