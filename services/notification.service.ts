@@ -1,6 +1,7 @@
 import logger from "@utils/logger";
 import { Subscription } from "@types";
 import * as repo from "@repository/notification.repository";
+import * as channelRepo from "@repository/channel.repository";
 import {
   EVENT_TYPES,
   publishSubscriptionEventAsync,
@@ -18,11 +19,15 @@ export const SUBSCRIPTION_EVENTS = {
 
 // Notify on new subscription
 export const notifyNewSubscription = async (subscription: Subscription) => {
-  await repo.createNotification({
-    message: `New subscriber to your channel`,
-    type: "INFO",
-    userId: subscription.channelId, // channel owner
-  });
+  // Get channel owner's ID
+  const channel = await channelRepo.getChannelById(subscription.channelId);
+  if (channel?.ownerId) {
+    await repo.createNotification({
+      message: `New subscriber to your channel`,
+      type: "INFO",
+      userId: channel.ownerId,
+    });
+  }
 
   publishSubscriptionEventAsync(SUBSCRIPTION_EVENTS.SUBSCRIBED, subscription);
   notifyChannelOwner(subscription.channelId, subscription.userId, "subscribed");

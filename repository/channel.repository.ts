@@ -87,15 +87,15 @@ export const getChannelByName = async (name: string) => {
   return channel;
 };
 
-// Get channel by owner
-export const getChannelByOwner = async (ownerId: string) => {
+// Get all channels by owner
+export const getChannelsByOwner = async (ownerId: string) => {
   const cacheKeys = await getChannelCacheKeys();
   const cacheKey = cacheKeys.byOwner(ownerId);
 
   const cached = await redisClient.get(cacheKey);
   if (cached) return JSON.parse(cached);
 
-  const channel = await prisma.channel.findFirst({
+  const channels = await prisma.channel.findMany({
     where: { ownerId },
     include: {
       _count: {
@@ -105,13 +105,14 @@ export const getChannelByOwner = async (ownerId: string) => {
         },
       },
     },
+    orderBy: { createdAt: "desc" },
   });
 
-  if (channel) {
-    await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(channel));
+  if (channels.length > 0) {
+    await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(channels));
   }
 
-  return channel;
+  return channels;
 };
 
 // Get all channels with pagination

@@ -20,8 +20,8 @@ router.get("/trending", channelController.getTrendingChannels);
 // Create channel
 router.post("/", protectRoute, channelController.createChannel);
 
-// Get my channel (must be before /:id)
-router.get("/me", protectRoute, channelController.getMyChannel);
+// Get my channels (must be before /:id)
+router.get("/me", protectRoute, channelController.getMyChannels);
 
 // Update channel
 router.put("/:id", protectRoute, channelController.updateChannel);

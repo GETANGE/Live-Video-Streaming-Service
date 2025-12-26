@@ -56,8 +56,8 @@ export const getChannel = async (
   }
 };
 
-// Get my channel
-export const getMyChannel = async (
+// Get my channels
+export const getMyChannels = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -66,14 +66,14 @@ export const getMyChannel = async (
     const userId = req.user?.id;
     if (!userId) throw new APIError("Unauthorized", 401);
 
-    const channel = await channelService.getMyChannel(userId);
+    const channels = await channelService.getMyChannels(userId);
 
     res.status(200).json({
       success: true,
-      data: channel,
+      data: channels,
     });
   } catch (error) {
-    logger.error("Get my channel error:", error);
+    logger.error("Get my channels error:", error);
     next(error);
   }
 };

@@ -34,4 +34,4 @@ ENV FFMPEG_TEMP_DIR=/tmp/video-processing
 
 EXPOSE 3000
 
-CMD ["bun", "index.ts"]
+CMD ["bun","run","start"]

@@ -17,12 +17,6 @@ export const createChannel = async (
     currency?: string;
   }
 ) => {
-  // Check if user already has a channel
-  const existingChannel = await channelRepo.getChannelByOwner(ownerId);
-  if (existingChannel) {
-    throw new APIError("You already have a channel", 400);
-  }
-
   // Check if channel name is taken
   const nameExists = await channelRepo.getChannelByName(data.name);
   if (nameExists) {
@@ -72,13 +66,13 @@ export const getChannelByName = async (name: string) => {
   return channel;
 };
 
-// Get user's channel
-export const getMyChannel = async (ownerId: string) => {
-  const channel = await channelRepo.getChannelByOwner(ownerId);
-  if (!channel) {
-    throw new APIError("You don't have a channel yet", 404);
+// Get user's channels
+export const getMyChannels = async (ownerId: string) => {
+  const channels = await channelRepo.getChannelsByOwner(ownerId);
+  if (!channels || channels.length === 0) {
+    throw new APIError("You don't have any channels yet", 404);
   }
-  return channel;
+  return channels;
 };
 
 // Get all channels
