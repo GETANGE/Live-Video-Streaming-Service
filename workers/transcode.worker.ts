@@ -3,8 +3,31 @@ import { TranscodeTask } from "@types";
 import ffmpeg from "fluent-ffmpeg";
 import { join } from "path";
 import { existsSync } from "fs";
+import { execSync } from "child_process";
 
 const HLS_PLAYLIST_TYPE = "vod";
+
+// Check for hardware acceleration support
+const detectHardwareAcceleration = (): "nvenc" | "vaapi" | "videotoolbox" | "cpu" => {
+  const hwaccel = process.env.FFMPEG_HWACCEL;
+  if (hwaccel) return hwaccel as any;
+
+  try {
+    // Check for NVIDIA GPU
+    execSync("nvidia-smi", { stdio: "ignore" });
+    return "nvenc";
+  } catch {
+    try {
+      // Check for Intel VAAPI (Linux)
+      if (existsSync("/dev/dri/renderD128")) {
+        return "vaapi";
+      }
+    } catch {}
+  }
+  return "cpu";
+};
+
+const HWACCEL = detectHardwareAcceleration();
 
 // Watermark configuration
 const WATERMARK_PATH = join(__dirname, "../assets/watermarks/logo.png");
@@ -49,20 +72,69 @@ const transcode = (task: TranscodeTask): Promise<void> => {
 
     const command = ffmpeg(inputPath);
 
-    // Base output options
+    // Performance optimization settings
+    const ffmpegPreset = process.env.FFMPEG_PRESET || "veryfast";
+    const threads = process.env.FFMPEG_THREADS || "0"; // 0 = auto-detect CPU cores
+
+    // Build encoder options based on hardware acceleration
+    const getEncoderOptions = (): string[] => {
+      const bitrateNum = parseInt(preset.bitrate);
+
+      switch (HWACCEL) {
+        case "nvenc":
+          // NVIDIA GPU acceleration (5-10x faster)
+          return [
+            "-c:v h264_nvenc",
+            "-preset p4", // p1(fastest) to p7(slowest) - p4 is balanced
+            "-tune hq",
+            "-rc vbr",
+            `-b:v ${preset.bitrate}`,
+            `-maxrate ${bitrateNum * 1.5}k`,
+            `-bufsize ${bitrateNum * 2}k`,
+          ];
+
+        case "vaapi":
+          // Intel/AMD GPU acceleration (Linux)
+          return [
+            "-vaapi_device /dev/dri/renderD128",
+            "-c:v h264_vaapi",
+            `-b:v ${preset.bitrate}`,
+            `-maxrate ${bitrateNum * 1.5}k`,
+            `-bufsize ${bitrateNum * 2}k`,
+          ];
+
+        default:
+          // CPU encoding (optimized for speed)
+          return [
+            "-c:v libx264",
+            `-preset ${ffmpegPreset}`,
+            "-tune fastdecode",
+            "-crf 23",
+            `-b:v ${preset.bitrate}`,
+            `-maxrate ${preset.bitrate}`,
+            `-bufsize ${bitrateNum * 2}k`,
+            `-threads ${threads}`,
+          ];
+      }
+    };
+
+    // Base output options - optimized for speed
     const outputOptions: string[] = [
-      "-c:v libx264",
-      "-preset fast",
-      "-crf 22",
-      `-b:v ${preset.bitrate}`,
-      `-maxrate ${preset.bitrate}`,
-      `-bufsize ${parseInt(preset.bitrate) * 2}k`,
+      ...getEncoderOptions(),
       "-c:a aac",
       `-b:a ${preset.audioBitrate}`,
+      "-movflags +faststart",
       `-hls_time ${segmentDuration}`,
       `-hls_playlist_type ${HLS_PLAYLIST_TYPE}`,
       `-hls_segment_filename ${join(outputDir, "segment_%03d.ts")}`,
     ];
+
+    // Log which encoder is being used
+    parentPort?.postMessage({
+      type: "info",
+      quality: preset.name,
+      message: `Using ${HWACCEL.toUpperCase()} encoder`,
+    });
 
     if (useWatermark) {
       // Add watermark as second input

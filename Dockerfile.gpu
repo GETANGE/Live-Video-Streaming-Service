@@ -1,0 +1,48 @@
+# GPU-accelerated video processing with NVIDIA NVENC
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04 AS base
+
+# Install FFmpeg with NVIDIA support and Bun
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
+
+WORKDIR /app
+
+# Install dependencies
+FROM base AS deps
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
+
+# Generate Prisma client
+FROM deps AS prisma
+COPY prisma ./prisma
+RUN bunx prisma generate
+
+# Production build
+FROM base AS runner
+WORKDIR /app
+
+# Copy dependencies and prisma client
+COPY --from=prisma /app/node_modules ./node_modules
+COPY --from=prisma /app/prisma ./prisma
+
+# Copy source code
+COPY . .
+
+# Create temp directory for video processing
+RUN mkdir -p /tmp/video-processing
+
+ENV NODE_ENV=production
+ENV FFMPEG_TEMP_DIR=/tmp/video-processing
+# Enable NVIDIA hardware acceleration
+ENV FFMPEG_HWACCEL=nvenc
+
+EXPOSE 3000
+
+CMD ["bun", "run", "start"]

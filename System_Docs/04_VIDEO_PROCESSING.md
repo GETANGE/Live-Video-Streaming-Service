@@ -463,6 +463,205 @@ The transcoder automatically skips watermarking if the file doesn't exist.
 
 ---
 
+## Performance Optimization
+
+The video processing system includes multiple optimizations to minimize transcoding time.
+
+### Hardware Acceleration
+
+The system auto-detects available hardware and uses the fastest encoder:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    HARDWARE ACCELERATION DETECTION                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────────┐                                                       │
+│   │  System Start   │                                                       │
+│   └────────┬────────┘                                                       │
+│            │                                                                │
+│            ▼                                                                │
+│   ┌─────────────────┐     Yes     ┌─────────────────┐                       │
+│   │ NVIDIA GPU?     │────────────▶│  Use NVENC      │  5-10x faster         │
+│   │ (nvidia-smi)    │             │  (h264_nvenc)   │                       │
+│   └────────┬────────┘             └─────────────────┘                       │
+│            │ No                                                             │
+│            ▼                                                                │
+│   ┌─────────────────┐     Yes     ┌─────────────────┐                       │
+│   │ Intel/AMD GPU?  │────────────▶│  Use VAAPI      │  3-5x faster          │
+│   │ (/dev/dri)      │             │  (h264_vaapi)   │                       │
+│   └────────┬────────┘             └─────────────────┘                       │
+│            │ No                                                             │
+│            ▼                                                                │
+│   ┌─────────────────┐                                                       │
+│   │  Use CPU        │  Optimized with veryfast preset                       │
+│   │  (libx264)      │  Multi-threaded (all cores)                           │
+│   └─────────────────┘                                                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Encoder Comparison
+
+| Encoder | Hardware | Speed | Quality | Use Case |
+|---------|----------|-------|---------|----------|
+| **NVENC** | NVIDIA GPU | 5-10x faster | Excellent | Production servers with GPU |
+| **VAAPI** | Intel/AMD | 3-5x faster | Good | Linux with integrated GPU |
+| **libx264** | CPU | Baseline | Best | Universal fallback |
+
+### Estimated Processing Times (1-hour video)
+
+| Encoder | Preset | Single Quality | 3 Qualities (Parallel) |
+|---------|--------|----------------|------------------------|
+| CPU (4-core) | ultrafast | ~20 min | ~25-30 min |
+| CPU (4-core) | veryfast | ~40 min | ~50-60 min |
+| CPU (8-core) | veryfast | ~25 min | ~30-35 min |
+| NVIDIA GPU | p4 | ~5 min | ~8-10 min |
+| Intel VAAPI | default | ~10 min | ~15-18 min |
+
+### FFmpeg Optimization Settings
+
+```typescript
+// Location: workers/transcode.worker.ts
+
+// CPU Encoding (Optimized)
+const cpuOptions = [
+  "-c:v libx264",
+  "-preset veryfast",        // ultrafast | superfast | veryfast | faster | fast
+  "-tune fastdecode",        // Optimize for streaming playback
+  "-crf 23",                 // Quality (lower = better, 18-28 typical)
+  "-threads 0",              // Auto-detect CPU cores
+  "-movflags +faststart",    // Enable fast start for streaming
+];
+
+// NVIDIA GPU Encoding
+const nvencOptions = [
+  "-c:v h264_nvenc",
+  "-preset p4",              // p1 (fastest) to p7 (slowest)
+  "-tune hq",                // High quality tuning
+  "-rc vbr",                 // Variable bitrate
+];
+
+// Intel/AMD GPU Encoding
+const vaapiOptions = [
+  "-vaapi_device /dev/dri/renderD128",
+  "-c:v h264_vaapi",
+];
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FFMPEG_PRESET` | `veryfast` | CPU preset: ultrafast, superfast, veryfast, faster, fast |
+| `FFMPEG_HWACCEL` | auto | Force encoder: nvenc, vaapi, cpu |
+| `FFMPEG_THREADS` | `0` | Thread count (0 = auto-detect cores) |
+
+### Configuration Examples
+
+```env
+# Maximum speed (slight quality tradeoff)
+FFMPEG_PRESET=ultrafast
+
+# Force NVIDIA GPU encoding
+FFMPEG_HWACCEL=nvenc
+
+# Use all CPU cores
+FFMPEG_THREADS=0
+```
+
+### Speed vs Quality Tradeoff
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      CPU PRESET COMPARISON                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Speed ◀──────────────────────────────────────────────────────────▶ Quality │
+│                                                                             │
+│  ultrafast ──▶ superfast ──▶ veryfast ──▶ faster ──▶ fast ──▶ slow         │
+│     │              │             │           │         │         │          │
+│   100%           80%           60%         50%       40%       20%          │
+│  (fastest)                  (default)                       (best quality) │
+│                                                                             │
+│  Recommended: veryfast (good balance of speed and quality)                  │
+│  For fastest: ultrafast (2x faster, slightly lower quality)                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### GPU Setup
+
+#### NVIDIA GPU (Recommended for Production)
+
+1. **Install NVIDIA Container Toolkit:**
+```bash
+# Ubuntu/Debian
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+```
+
+2. **Use GPU Dockerfile:**
+```bash
+docker build -f Dockerfile.gpu -t streaming-app:gpu .
+```
+
+3. **Run with GPU access:**
+```yaml
+# docker-compose.yml
+services:
+  app:
+    image: streaming-app:gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - FFMPEG_HWACCEL=nvenc
+```
+
+#### Intel VAAPI (Integrated GPU)
+
+```yaml
+# docker-compose.yml
+services:
+  app:
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - FFMPEG_HWACCEL=vaapi
+```
+
+### Monitoring Encoder Usage
+
+The system logs which encoder is being used for each transcode job:
+
+```
+[720p] Using NVENC encoder
+[720p] Progress: 25%
+[720p] Progress: 50%
+[720p] Progress: 75%
+[720p] Progress: 100%
+Parallel transcode completed in 8.5s
+```
+
+### Performance Metrics
+
+Track video processing performance in Grafana:
+
+| Metric | Description |
+|--------|-------------|
+| `app_video_processing_total` | Total videos processed (success/failed) |
+| `app_video_processing_duration_seconds` | Processing time by quality |
+
+---
+
 ## Database Model
 
 ```prisma

@@ -27,6 +27,8 @@ const runWorker = (
         const percent = Math.round(msg.percent);
         logger.debug(`[${msg.quality}] Progress: ${percent}%`);
         onProgress?.(msg.quality, percent);
+      } else if (msg.type === "info") {
+        logger.info(`[${msg.quality}] ${msg.message}`);
       } else if (msg.type === "done") {
         onProgress?.(msg.quality, 100);
         resolve({ quality: msg.quality, success: true });
