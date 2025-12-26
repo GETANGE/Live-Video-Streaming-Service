@@ -362,6 +362,107 @@ ffmpeg -i input.mp4 -ss 00:00:05 -vframes 1 thumbnail.jpg
 
 ---
 
+## Watermarking (TikTok-Style)
+
+Videos are automatically watermarked during transcoding to protect content and brand your videos.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Moving Position** | Watermark cycles through all 4 corners every 16 seconds |
+| **Semi-Transparent** | 70% opacity (configurable) |
+| **Auto-Scaling** | Scales to 15% of video width per quality |
+| **Anti-Removal** | Moving position makes automated removal difficult |
+
+### Watermark Movement Pattern
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     WATERMARK POSITION CYCLE                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   0-4 seconds          4-8 seconds          8-12 seconds       12-16 sec   │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌────────────┐│
+│  │[WM]          │    │          [WM]│    │              │    │            ││
+│  │              │    │              │    │              │    │            ││
+│  │              │    │              │    │              │    │            ││
+│  │              │    │              │    │          [WM]│    │[WM]        ││
+│  └──────────────┘    └──────────────┘    └──────────────┘    └────────────┘│
+│    Top-Left            Top-Right          Bottom-Right       Bottom-Left   │
+│                                                                             │
+│                        (Then cycle repeats)                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+```typescript
+// Location: workers/transcode.worker.ts
+
+const WATERMARK_PATH = "assets/watermarks/logo.png";
+const WATERMARK_OPACITY = "0.7";           // 0.0 to 1.0
+const WATERMARK_PADDING = 20;              // pixels from edge
+const WATERMARK_SCALE = 0.15;              // 15% of video width
+const WATERMARK_MOVE_INTERVAL = 4;         // seconds per position
+```
+
+### Environment Variables (Optional)
+
+```env
+WATERMARK_OPACITY=0.7
+```
+
+### Setup
+
+1. **Add your logo:**
+```bash
+# Place your PNG logo (with transparency) at:
+assets/watermarks/logo.png
+```
+
+2. **Recommended logo specs:**
+   - Format: PNG with transparent background
+   - Size: 500-1000px width
+   - Style: Light colors work better on video content
+
+3. **Rebuild application:**
+```bash
+docker-compose up -d --build app1 app2 app3
+```
+
+### FFmpeg Filter (Moving Watermark)
+
+```bash
+ffmpeg -i video.mp4 -i logo.png \
+  -filter_complex "
+    [0:v]scale=1280:720[video];
+    [1:v]scale=192:-1,format=rgba,colorchannelmixer=aa=0.7[wm];
+    [video][wm]overlay=x='if(lt(mod(t,16),4),20,if(lt(mod(t,16),8),W-w-20,if(lt(mod(t,16),12),W-w-20,20)))':y='if(lt(mod(t,16),4),20,if(lt(mod(t,16),8),20,if(lt(mod(t,16),12),H-h-20,H-h-20)))'[outv]
+  " \
+  -map "[outv]" -map 0:a output.mp4
+```
+
+### How It Works
+
+1. **During Transcoding**: Watermark is applied when video is transcoded to HLS
+2. **All Qualities**: Each quality variant (360p, 720p, 1080p, 2160p) gets watermarked
+3. **Permanent**: Watermark is baked into the video segments
+4. **No Runtime Overhead**: No processing needed during playback
+
+### Disabling Watermark
+
+To disable watermarking, simply remove or rename the watermark file:
+
+```bash
+mv assets/watermarks/logo.png assets/watermarks/logo.png.disabled
+```
+
+The transcoder automatically skips watermarking if the file doesn't exist.
+
+---
+
 ## Database Model
 
 ```prisma
