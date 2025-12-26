@@ -148,25 +148,27 @@ services:
       image: rabbitmq:3.13-management
       container_name: rabbitmq-streaming
       restart: unless-stopped
-  
+
       ports:
         - "5673:5672"    # AMQP
         - "15673:15672"  # Management UI
-  
+        - "15692:15692"  # Prometheus metrics
+
       environment:
         RABBITMQ_DEFAULT_USER: admin
         RABBITMQ_DEFAULT_PASS: admin123
         RABBITMQ_DEFAULT_VHOST: /
-  
+
       volumes:
         - rabbitmq_data:/var/lib/rabbitmq
-  
+        - ./monitoring/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+
       healthcheck:
         test: ["CMD", "rabbitmq-diagnostics", "ping"]
         interval: 10s
         timeout: 5s
         retries: 5
-  
+
       networks:
         - live-video-streaming-service
 
@@ -191,6 +193,104 @@ services:
     networks:
       - live-video-streaming-service
 
+  # ─────────────────────────────────────────────────────
+  # Monitoring Stack
+  # ─────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - live-video-streaming-service
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    user: "0"
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - live-video-streaming-service
+
+  # ─────────────────────────────────────────────────────
+  # Exporters for Prometheus
+  # ─────────────────────────────────────────────────────
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - live-video-streaming-service
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://streaming_user:streaming_password@postgres:5432/streaming_db?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - live-video-streaming-service
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx-exporter
+    command:
+      - '-nginx.scrape-uri=http://nginx:3000/nginx_status'
+    ports:
+      - "9113:9113"
+    depends_on:
+      - nginx
+    restart: unless-stopped
+    networks:
+      - live-video-streaming-service
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    networks:
+      - live-video-streaming-service
+
 networks:
   live-video-streaming-service:
     driver: bridge
@@ -202,3 +302,5 @@ volumes:
   minio_data:
   video_temp:
   nginx_cache:
+  prometheus_data:
+  grafana_data:

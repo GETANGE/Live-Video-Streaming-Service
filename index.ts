@@ -43,6 +43,10 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 8040;
 
+// Trust proxy - required when behind nginx/load balancer
+// This allows express-rate-limit to correctly identify clients via X-Forwarded-For
+app.set("trust proxy", 1);
+
 googleStrategy();
 
 app.use(helmet());
@@ -58,6 +62,10 @@ const rateLimiter = new RateLimiterMemory({
 });
 
 app.use((req: any, res: Response, next: NextFunction) => {
+  // Skip rate limiting for health checks and metrics (Prometheus scraping)
+  if (req.path === "/health" || req.path === "/metrics" || req.path === "/ready") {
+    return next();
+  }
   rateLimiter
     .consume(req.ip)
     .then(() => next())
@@ -72,6 +80,10 @@ const SensitiveEndpointRatelimit = rateLimit({
   limit: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req: Request) => {
+    // Skip rate limiting for health checks and metrics (Prometheus scraping)
+    return req.path === "/health" || req.path === "/metrics" || req.path === "/ready";
+  },
   handler: (req: Request, res: Response, next: NextFunction) => {
     logger.warn(`⛔ Sensitive endpoint limit exceeded | IP: ${req.ip}`);
     next(new APIError("Too many requests", 429));
