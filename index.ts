@@ -22,6 +22,7 @@ import {
   loadSheddingMiddleware,
   metricsHandler,
   readinessHandler,
+  httpMetricsMiddleware,
 } from "@middleware/loadShedding.middleware";
 
 import authRoutes from "@routes/user.route";
@@ -99,6 +100,9 @@ app.use(SensitiveEndpointRatelimit as any);
 
 // Load shedding middleware - rejects requests when system is overloaded
 app.use(loadSheddingMiddleware);
+
+// HTTP metrics middleware - tracks request counts and durations for Prometheus
+app.use(httpMetricsMiddleware);
 
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({

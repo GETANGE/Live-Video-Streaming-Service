@@ -33,6 +33,12 @@ scrape_configs:
     static_configs:
       - targets: ['rabbitmq:15692']
 
+  # MinIO - S3-compatible object storage
+  - job_name: 'minio'
+    static_configs:
+      - targets: ['minio:9000']
+    metrics_path: /minio/v2/metrics/cluster
+
   # Application instances (if they expose /metrics endpoint)
   - job_name: 'app'
     static_configs:
