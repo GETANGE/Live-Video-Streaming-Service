@@ -96,7 +96,7 @@ const SensitiveEndpointRatelimit = rateLimit({
   }),
 });
 
-app.use(SensitiveEndpointRatelimit as any);
+// app.use(SensitiveEndpointRatelimit as any);
 
 // Load shedding middleware - rejects requests when system is overloaded
 app.use(loadSheddingMiddleware);

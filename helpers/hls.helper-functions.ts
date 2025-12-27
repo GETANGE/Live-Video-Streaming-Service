@@ -170,8 +170,9 @@ export const getPresignedUrl = async (
 };
 
 export const getPublicUrl = (path: string): string => {
-  const endpoint = process.env.MINIO_ENDPOINT || "localhost";
-  const port = process.env.MINIO_PORT || "9000";
+  // Use public endpoint for browser-accessible URLs (falls back to internal endpoint)
+  const endpoint = process.env.MINIO_PUBLIC_ENDPOINT || process.env.MINIO_ENDPOINT || "localhost";
+  const port = process.env.MINIO_PUBLIC_PORT || process.env.MINIO_PORT || "9000";
   const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http";
 
   return `${protocol}://${endpoint}:${port}/${BUCKET_NAME}/${path}`;

@@ -4,6 +4,12 @@ import {
   getUserByEmailRepo,
   getUserByIdRepo,
 } from "@repository/users.repository";
+import {
+  getUserCacheKeys,
+  invalidateUserCache,
+} from "@helpers/cacheInvalidations/userCacheInvalidate";
+import { invalidateChannelCache } from "@helpers/cacheInvalidations/channelCacheInvalidation";
+import redisClient from "@configs/redis.config";
 import APIError from "@utils/APIError";
 import logger from "@utils/logger";
 import type { NextFunction, Request, Response } from "express";
@@ -14,6 +20,8 @@ import {
 } from "helpers/generate-token.helper";
 import passport from "passport";
 
+const USER_CACHE_TTL = 60;
+
 export const googleCallback = (
   req: Request,
   res: Response,
@@ -23,35 +31,33 @@ export const googleCallback = (
     "google",
     { session: false },
     async (err: Error, user: any, info: any) => {
+      const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3002";
+
       try {
         if (err) {
-          return next(new APIError(err.message || "Google auth failed", 500));
+          // Redirect to frontend with error
+          return res.redirect(
+            `${FRONTEND_URL}/auth/callback?error=${encodeURIComponent(err.message || "Google auth failed")}`,
+          );
         }
 
         if (!user) {
-          return next(new APIError("Authentication failed", 401));
+          return res.redirect(
+            `${FRONTEND_URL}/auth/callback?error=Authentication failed`,
+          );
         }
 
         const accessToken = await generateToken(user);
         const refreshToken = await generateRefreshToken(user);
 
-        return res.status(200).json({
-          status: "success",
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            imageUrl: user.imageUrl,
-            isActive: user.isActive,
-            isAdmin: user.isAdmin,
-          },
-        });
+        // Redirect to frontend with tokens
+        return res.redirect(
+          `${FRONTEND_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`,
+        );
       } catch (error: any) {
-        logger.error(error.message || "Failed to update profile");
-        return next(
-          new APIError(error.message || "Failed to update profile", 500),
+        logger.error(error.message || "Failed to authenticate with Google");
+        return res.redirect(
+          `${FRONTEND_URL}/auth/callback?error=${encodeURIComponent(error.message || "Authentication failed")}`,
         );
       }
     },
@@ -76,10 +82,25 @@ export const protectRoute = async (
       return next(new APIError("Unauthorized", 401));
     }
 
-    const user = await getUserByIdRepo(decoded.id);
+    const cacheKeys = await getUserCacheKeys();
+    const cacheKey = cacheKeys.byId(decoded.id);
+    let user = null;
 
+    // Try to get user from Redis cache
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      user = JSON.parse(cached);
+    }
+
+    // If not in cache, fetch from database and cache it
     if (!user) {
-      return next(new APIError("User not found", 404));
+      user = await getUserByIdRepo(decoded.id);
+
+      if (!user) {
+        return next(new APIError("User not found", 404));
+      }
+
+      await redisClient.set(cacheKey, JSON.stringify(user), "EX", USER_CACHE_TTL);
     }
 
     req.user = user;
@@ -114,6 +135,28 @@ export const restrictToAdmin = () => {
   };
 };
 
+export const getCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return next(new APIError("User not found", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: user,
+    });
+  } catch (error: any) {
+    logger.error(error.message || "Failed to get current user");
+    return next(new APIError("Internal server error", 500));
+  }
+};
+
 export const updateProfile = async (
   req: Request,
   res: Response,
@@ -145,6 +188,8 @@ export const updateProfile = async (
     };
 
     await publishMessage(message);
+    await invalidateUserCache();
+    await invalidateChannelCache();
 
     res.status(202).json({
       status: "success",

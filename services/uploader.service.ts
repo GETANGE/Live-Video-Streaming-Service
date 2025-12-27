@@ -20,16 +20,37 @@ import crypto from "crypto";
 import logger from "@utils/logger";
 import { UploadResult } from "@types";
 
-// Upload profile picture → MinIO
+export type ProfilePicProgressCallback = (progress: {
+  percent: number;
+  stage: "processing" | "uploading" | "complete" | "error";
+  message?: string;
+}) => void;
+
+// Upload profile picture → MinIO with progress tracking
 export const uploadProfilePic = async (
   buffer: Buffer,
   userId: string,
+  onProgress?: ProfilePicProgressCallback,
 ): Promise<{ url: string }> => {
   logger.info(`Uploading profile pic for user ${userId}`);
 
+  // Emit processing stage
+  onProgress?.({ percent: 0, stage: "processing", message: "Preparing image..." });
+
   const path = `profiles/${userId}.jpg`;
+
+  // Emit uploading stage
+  onProgress?.({ percent: 30, stage: "uploading", message: "Uploading to storage..." });
+
   await uploadToMinio(path, buffer, "image/jpeg");
+
+  // Emit near completion
+  onProgress?.({ percent: 90, stage: "uploading", message: "Finalizing..." });
+
   const url = getPublicUrl(path);
+
+  // Emit complete
+  onProgress?.({ percent: 100, stage: "complete", message: "Upload complete" });
 
   return { url };
 };

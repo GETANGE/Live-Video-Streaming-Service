@@ -12,6 +12,11 @@ export const initSocket = (server: HTTPServer) => {
   if (io) return;
 
   io = new IOServer(server, {
+    cors: {
+      origin: true,
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
     maxHttpBufferSize: 1e6,
     pingTimeout: 60000,
     pingInterval: 25000,
@@ -55,6 +60,19 @@ export const emitVideoProgress = (
 ): void => {
   if (!io) return;
   io.to(userId).emit("video_progress", { videoId, ...progress });
+};
+
+// Emit profile picture upload progress to user
+export const emitProfilePicProgress = (
+  userId: string,
+  progress: {
+    percent: number;
+    stage: "processing" | "uploading" | "complete" | "error";
+    message?: string;
+  },
+): void => {
+  if (!io) return;
+  io.to(userId).emit("profile_pic_progress", { userId, ...progress });
 };
 
 // Graceful shutdown

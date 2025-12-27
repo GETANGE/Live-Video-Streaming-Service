@@ -4,6 +4,7 @@ import { publishMessage } from "@events/producers/streaming.publisher";
 import { PRIORITY } from "@constants/constant";
 import APIError from "@utils/APIError";
 import logger from "@utils/logger";
+import { emitProfilePicProgress } from "@configs/socket.config";
 
 // Upload profile picture
 export const uploadProfilePic = async (
@@ -11,14 +12,20 @@ export const uploadProfilePic = async (
   res: Response,
   next: NextFunction,
 ) => {
+  const userId = req.user?.id;
+
   try {
-    const userId = req.user?.id;
     if (!userId) throw new APIError("Unauthorized", 401);
 
     const file = req.file;
     if (!file) throw new APIError("No file uploaded", 400);
 
-    const result = await uploaderService.uploadProfilePic(file.buffer, userId);
+    // Progress callback that emits socket events
+    const onProgress: uploaderService.ProfilePicProgressCallback = (progress) => {
+      emitProfilePicProgress(userId, progress);
+    };
+
+    const result = await uploaderService.uploadProfilePic(file.buffer, userId, onProgress);
 
     // Queue profile update with new image URL
     await publishMessage({
@@ -36,6 +43,14 @@ export const uploadProfilePic = async (
       data: { url: result.url },
     });
   } catch (error) {
+    // Emit error progress if userId is available
+    if (userId) {
+      emitProfilePicProgress(userId, {
+        percent: 0,
+        stage: "error",
+        message: error instanceof Error ? error.message : "Upload failed",
+      });
+    }
     logger.error("Profile pic upload error:", error);
     next(error);
   }

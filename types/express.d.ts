@@ -24,6 +24,7 @@ export interface UpdateProfilePayload {
   email?: string;
   username?: string;
   phoneNumber?: string;
+  imageUrl?: string;
 }
 
 // Pagination interfaces
