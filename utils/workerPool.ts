@@ -1,14 +1,9 @@
 import { Worker } from "worker_threads";
-import { TranscodeTask, WorkerResult} from "@types";
-import { cpus } from "os";
+import { TranscodeTask, WorkerResult } from "@types";
 import { join } from "path";
 import logger from "@utils/logger";
 
-
 type ProgressCallback = (quality: string, percent: number) => void;
-
-// Limit concurrent workers to avoid overwhelming CPU/memory
-const MAX_CONCURRENT_WORKERS = Math.min(cpus().length, 4);
 
 // Run a single transcode task in a worker thread
 const runWorker = (
@@ -49,51 +44,28 @@ const runWorker = (
   });
 };
 
-// Process tasks with controlled concurrency
-const processWithConcurrency = async <T, R>(
-  items: T[],
-  processor: (item: T) => Promise<R>,
-  concurrency: number,
-): Promise<R[]> => {
-  const results: R[] = [];
-  const executing: Promise<void>[] = [];
-
-  for (const item of items) {
-    const promise = processor(item).then((result) => {
-      results.push(result);
-    });
-
-    executing.push(promise);
-
-    if (executing.length >= concurrency) {
-      await Promise.race(executing);
-      executing.splice(
-        executing.findIndex((p) => p === promise),
-        1,
-      );
-    }
-  }
-
-  await Promise.all(executing);
-  return results;
-};
-
-// Transcode multiple quality variants in parallel using worker threads
+// Transcode quality variants sequentially (one at a time: 360p → 720p → 1080p)
 export const transcodeInParallel = async (
   tasks: TranscodeTask[],
   onProgress?: ProgressCallback,
 ): Promise<WorkerResult[]> => {
-  logger.info(
-    `Starting parallel transcode: ${tasks.length} variants, max ${MAX_CONCURRENT_WORKERS} workers`,
-  );
+  logger.info(`Starting sequential transcode: ${tasks.length} variants`);
 
   const startTime = Date.now();
+  const results: WorkerResult[] = [];
 
-  const results = await processWithConcurrency(
-    tasks,
-    (task) => runWorker(task, onProgress),
-    MAX_CONCURRENT_WORKERS,
-  );
+  // Process each quality preset one at a time in order
+  for (const task of tasks) {
+    logger.info(`Starting transcode for ${task.preset.name}...`);
+    const result = await runWorker(task, onProgress);
+    results.push(result);
+
+    if (result.success) {
+      logger.info(`Completed ${task.preset.name}`);
+    } else {
+      logger.error(`Failed ${task.preset.name}: ${result.error}`);
+    }
+  }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const failed = results.filter((r) => !r.success);
@@ -103,9 +75,9 @@ export const transcodeInParallel = async (
     throw new Error(`Failed to transcode: ${failed.map((f) => f.error).join("; ")}`);
   }
 
-  logger.info(`Parallel transcode completed in ${elapsed}s`);
+  logger.info(`Sequential transcode completed in ${elapsed}s`);
 
   return results;
 };
 
-export { MAX_CONCURRENT_WORKERS, ProgressCallback };
+export { ProgressCallback };

@@ -39,6 +39,16 @@ const WATERMARK_MOVE_INTERVAL = 4; // seconds before moving to next corner
 
  // Generate moving watermark overlay expression
 
+// Parse FFmpeg timemark (HH:MM:SS.ms) to seconds
+const parseTimemark = (timemark: string): number => {
+  const parts = timemark.split(":");
+  if (parts.length !== 3) return 0;
+  const hours = parseFloat(parts[0] ?? "0") || 0;
+  const minutes = parseFloat(parts[1] ?? "0") || 0;
+  const seconds = parseFloat(parts[2] ?? "0") || 0;
+  return hours * 3600 + minutes * 60 + seconds;
+};
+
 const getMovingWatermarkPosition = (): { x: string; y: string } => {
   const p = WATERMARK_PADDING;
   const interval = WATERMARK_MOVE_INTERVAL;
@@ -64,7 +74,7 @@ const getMovingWatermarkPosition = (): { x: string; y: string } => {
 
 const transcode = (task: TranscodeTask): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const { inputPath, outputDir, preset, segmentDuration } = task;
+    const { inputPath, outputDir, preset, segmentDuration, duration } = task;
     const playlistPath = join(outputDir, "playlist.m3u8");
 
     // Check if watermark exists
@@ -74,7 +84,7 @@ const transcode = (task: TranscodeTask): Promise<void> => {
 
     // Performance optimization settings
     const ffmpegPreset = process.env.FFMPEG_PRESET || "veryfast";
-    const threads = process.env.FFMPEG_THREADS || "0"; // 0 = auto-detect CPU cores
+    const threads = process.env.FFMPEG_THREADS || "2"; // Limit CPU cores to prevent system hang
 
     // Build encoder options based on hardware acceleration
     const getEncoderOptions = (): string[] => {
@@ -171,10 +181,19 @@ const transcode = (task: TranscodeTask): Promise<void> => {
       .outputOptions(outputOptions)
       .output(playlistPath)
       .on("progress", (progress) => {
+        // Calculate percentage from timemark since progress.percent is unreliable with complex filters
+        let percent = 0;
+        if (progress.timemark && duration > 0) {
+          const currentSeconds = parseTimemark(progress.timemark);
+          percent = Math.min((currentSeconds / duration) * 100, 100);
+        } else if (progress.percent) {
+          percent = progress.percent;
+        }
+
         parentPort?.postMessage({
           type: "progress",
           quality: preset.name,
-          percent: progress.percent || 0,
+          percent,
         });
       })
       .on("end", () => resolve())

@@ -18,7 +18,7 @@ const QUALITY_PRESETS = [
   { name: "360p", width: 640, height: 360, bitrate: "800k", audioBitrate: "96k" },
   { name: "720p", width: 1280, height: 720, bitrate: "2500k", audioBitrate: "128k" },
   { name: "1080p", width: 1920, height: 1080, bitrate: "5000k", audioBitrate: "192k" },
-  { name: "2160p", width: 3840, height: 2160, bitrate: "10000k", audioBitrate: "256k" },
+  // { name: "2160p", width: 3840, height: 2160, bitrate: "10000k", audioBitrate: "256k" },
 ];
 
 interface HLSOutput {
@@ -30,6 +30,7 @@ interface HLSOutput {
 export const transcodeToHLS = async (
   inputPath: string,
   videoId: string,
+  duration: number,
   onProgress?: ProgressCallback,
 ): Promise<HLSOutput> => {
   const workDir = join(TEMP_DIR, videoId);
@@ -46,6 +47,7 @@ export const transcodeToHLS = async (
         outputDir: variantDir,
         preset,
         segmentDuration: HLS_SEGMENT_DURATION,
+        duration,
       };
     }),
   );
@@ -121,7 +123,7 @@ export const processVideoToHLS = async (
     await generateThumbnail(inputPath, thumbnailPath);
     const thumbnailBuffer = await readFile(thumbnailPath);
 
-    const hlsOutput = await transcodeToHLS(inputPath, videoId, onProgress);
+    const hlsOutput = await transcodeToHLS(inputPath, videoId, duration, onProgress);
 
     const masterPlaylist = await readFile(hlsOutput.masterPlaylist);
 

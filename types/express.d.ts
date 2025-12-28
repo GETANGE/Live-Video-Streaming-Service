@@ -212,6 +212,7 @@ export interface TranscodeTask {
     audioBitrate: string;
   };
   segmentDuration: number;
+  duration: number; // Video duration in seconds for progress calculation
 }
 
 export interface WorkerResult {
@@ -231,6 +232,7 @@ export interface TranscodeTask {
     audioBitrate: string;
   };
   segmentDuration: number;
+  duration: number; // Video duration in seconds for progress calculation
 }
 
 // Channel payloads
