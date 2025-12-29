@@ -17,7 +17,7 @@ const handleStreamTranscode = async (payload: any): Promise<void> => {
 };
 
 // Live-specific event handlers
-const liveEventHandlers: Record<string, (payload: any) => Promise<void>> = {
+const liveEventHandlers: Record<string, (payload: any) => Promise<unknown>> = {
   STREAM_START: handleStreamStart,
   STREAM_END: handleStreamEnd,
   STREAM_TRANSCODE: handleStreamTranscode,
