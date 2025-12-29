@@ -5,14 +5,14 @@ import express, {
 } from "express";
 import helmet from "helmet";
 import dotenv from "dotenv";
-import morgan from "morgan";
 import passport from "passport";
 import cors from "cors";
 import redisClient from "@configs/redis.config";
 import rateLimit from "express-rate-limit";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import RedisStore from "rate-limit-redis";
-import logger from "@utils/logger";
+import logger, { closeLogger } from "@utils/logger";
+import { requestLogger } from "@middleware/requestLogger.middleware";
 import { connectToDatabase } from "@configs/database.config";
 import { corsOptions } from "@configs/cors.config";
 
@@ -60,7 +60,7 @@ googleStrategy();
 app.use(helmet());
 app.use(express.json());
 app.use(passport.initialize());
-app.use(morgan("dev"));
+app.use(requestLogger);
 app.use(cors(corsOptions));
 
 const rateLimiter = new RateLimiterMemory({
@@ -201,6 +201,7 @@ process.on("SIGINT", async () => {
   logger.info("SIGINT signal received");
   stopAllJobs();
   await stopRtmpServer();
+  await closeLogger();
   process.exit(0);
 });
 

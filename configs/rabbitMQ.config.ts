@@ -4,6 +4,8 @@ import amqplib from "amqplib";
 
 let connection: any = null;
 let channel: any = null;
+let isClosing = false;
+const activeChannels: Set<any> = new Set();
 
 export const getRabbitMQChannel = async (): Promise<any> => {
   if (channel) return channel;
@@ -60,50 +62,63 @@ export const getRabbitMQChannel = async (): Promise<any> => {
   return channel;
 };
 
-// Get a dedicated channel for video processing (separate prefetch)
+const createTrackedChannel = async (prefetch: number): Promise<any> => {
+  if (!connection) {
+    await getRabbitMQChannel();
+  }
+
+  const newChannel = await connection.createChannel();
+  await newChannel.prefetch(prefetch);
+  activeChannels.add(newChannel);
+
+  newChannel.on("close", () => {
+    activeChannels.delete(newChannel);
+  });
+
+  return newChannel;
+};
+
 export const getVideoChannel = async (): Promise<any> => {
-  if (!connection) {
-    await getRabbitMQChannel();
-  }
-
-  const videoChannel = await connection.createChannel();
-  await videoChannel.prefetch(QUEUES.VIDEO.prefetch);
-
-  return videoChannel;
+  return createTrackedChannel(QUEUES.VIDEO.prefetch);
 };
 
-// Get a dedicated channel for general processing
 export const getGeneralChannel = async (): Promise<any> => {
-  if (!connection) {
-    await getRabbitMQChannel();
-  }
-
-  const generalChannel = await connection.createChannel();
-  await generalChannel.prefetch(QUEUES.GENERAL.prefetch);
-
-  return generalChannel;
+  return createTrackedChannel(QUEUES.GENERAL.prefetch);
 };
 
-// Get a dedicated channel for live streaming processing
 export const getLiveChannel = async (): Promise<any> => {
-  if (!connection) {
-    await getRabbitMQChannel();
+  return createTrackedChannel(QUEUES.LIVE.prefetch);
+};
+
+export const closeRabbitMQ = async (): Promise<void> => {
+  if (isClosing) return;
+  isClosing = true;
+
+  logger.info("Closing RabbitMQ connection...");
+
+  try {
+    if (connection) {
+      await connection.close();
+      connection = null;
+      channel = null;
+      activeChannels.clear();
+    }
+  } catch (err: any) {
+    if (err.message !== "Connection closing") {
+      logger.error(`RabbitMQ close error: ${err.message}`);
+    }
   }
-
-  const liveChannel = await connection.createChannel();
-  await liveChannel.prefetch(QUEUES.LIVE.prefetch);
-
-  return liveChannel;
 };
 
 export const connectToRabbitMq = async () => {
   await getRabbitMQChannel();
   logger.info("Connected to RabbitMQ");
 
-  process.on("SIGINT", async () => {
-    logger.info("Closing RabbitMQ connection...");
-    if (channel) await channel.close();
-    if (connection) await connection.close();
+  const shutdown = async () => {
+    await closeRabbitMQ();
     process.exit(0);
-  });
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 };
