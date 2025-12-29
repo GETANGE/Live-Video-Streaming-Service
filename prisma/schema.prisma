@@ -34,6 +34,33 @@ enum NotificationType {
   WARNING
 }
 
+// Livestream enums
+enum StreamStatus {
+  IDLE
+  LIVE
+  ENDED
+  PROCESSING_VOD
+}
+
+enum StreamKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum ChatMessageStatus {
+  VISIBLE
+  DELETED
+  FLAGGED
+}
+
+enum ModerationAction {
+  MUTE
+  BAN
+  WARN
+  UNBAN
+}
+
 // Users
 model User {
   id          String   @id @default(uuid())
@@ -53,6 +80,13 @@ model User {
   notifications Notification[]
   subscription  Subscription[]
   channels      Channel[]
+
+  // Livestream relations
+  liveStreams     LiveStream[]    @relation("StreamerStreams")
+  chatMessages    ChatMessage[]
+  streamKeys      StreamKey[]
+  moderatorLogs   ModerationLog[] @relation("ModeratorActions")
+  moderatedLogs   ModerationLog[] @relation("ModeratedActions")
 
   @@index([createdAt])
 }
@@ -80,6 +114,9 @@ model Video {
 
   user    User?    @relation(fields: [uploadedBy], references: [id])
   channel Channel? @relation(fields: [channelId], references: [id])
+
+  // Livestream VOD source
+  sourceLiveStream LiveStream?
 
   @@index([title])
   @@index([uploadedBy])
@@ -218,6 +255,10 @@ model Channel {
   subscriptions Subscription[]
   videos        Video[]
 
+  // Livestream relations
+  liveStreams   LiveStream[]
+  streamKeys    StreamKey[]
+
   @@index([name])
   @@index([ownerId])
   @@index([isPaid])
@@ -246,4 +287,126 @@ model Subscription {
   @@index([status])
   @@index([startDate])
   @@index([paymentId])
+}
+
+// ===== LIVESTREAMING MODELS =====
+
+// LiveStream
+model LiveStream {
+  id              String        @id @default(uuid())
+  title           String
+  description     String?
+  channelId       String
+  streamerId      String
+  status          StreamStatus  @default(IDLE)
+
+  // Stream metadata
+  thumbnailUrl    String?
+  streamKey       String        @unique
+  rtmpUrl         String?
+  hlsUrl          String?
+
+  // Viewer tracking
+  peakViewers     Int           @default(0)
+  currentViewers  Int           @default(0)
+  totalViews      Int           @default(0)
+
+  // Timing
+  scheduledStart  DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  duration        Int           @default(0)
+
+  // VOD conversion
+  vodVideoId      String?       @unique
+  vodStatus       String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  channel         Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  streamer        User          @relation("StreamerStreams", fields: [streamerId], references: [id])
+  chatMessages    ChatMessage[]
+  vodVideo        Video?        @relation(fields: [vodVideoId], references: [id])
+  moderationLogs  ModerationLog[]
+
+  @@index([channelId])
+  @@index([streamerId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([streamKey])
+}
+
+// StreamKey - For OBS/streaming software authentication
+model StreamKey {
+  id          String          @id @default(uuid())
+  key         String          @unique
+  userId      String
+  channelId   String
+  status      StreamKeyStatus @default(ACTIVE)
+  label       String?
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel     Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId, label])
+  @@index([key])
+  @@index([userId])
+  @@index([channelId])
+  @@index([status])
+}
+
+// ChatMessage - Live chat messages
+model ChatMessage {
+  id            String            @id @default(uuid())
+  streamId      String
+  userId        String
+  message       String
+  status        ChatMessageStatus @default(VISIBLE)
+
+  // Metadata
+  isHighlighted Boolean           @default(false)
+  isPinned      Boolean           @default(false)
+  replyToId     String?
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  stream        LiveStream        @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id])
+  replyTo       ChatMessage?      @relation("ChatReplies", fields: [replyToId], references: [id])
+  replies       ChatMessage[]     @relation("ChatReplies")
+
+  @@index([streamId, createdAt])
+  @@index([userId])
+  @@index([status])
+}
+
+// ModerationLog - Track moderation actions
+model ModerationLog {
+  id           String           @id @default(uuid())
+  streamId     String
+  moderatorId  String
+  targetUserId String
+  action       ModerationAction
+  reason       String?
+  expiresAt    DateTime?
+  createdAt    DateTime         @default(now())
+
+  // Relations
+  stream       LiveStream       @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  moderator    User             @relation("ModeratorActions", fields: [moderatorId], references: [id])
+  targetUser   User             @relation("ModeratedActions", fields: [targetUserId], references: [id])
+
+  @@index([streamId])
+  @@index([targetUserId])
+  @@index([action])
+  @@index([expiresAt])
 }

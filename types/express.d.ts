@@ -5,6 +5,8 @@ declare global {
     interface User {
       id: string;
       email?: string;
+      username?: string;
+      imageUrl?: string | null;
       isAdmin?: boolean;
     }
     interface Request {
@@ -264,6 +266,136 @@ export interface PendingSubscription {
   amount: number;
   phoneNumber: string;
   createdAt: string;
+}
+
+// Livestreaming payload types
+export interface StreamStartPayload {
+  streamId: string;
+  streamKey: string;
+  channelId: string;
+  streamerId: string;
+  title?: string;
+}
+
+export interface StreamEndPayload {
+  streamId: string;
+  streamKey: string;
+  channelId: string;
+  streamerId: string;
+  duration?: number;
+}
+
+export interface ChatMessagePayload {
+  messageId: string;
+  streamId: string;
+  userId: string;
+  username: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface VodConvertPayload {
+  streamId: string;
+  channelId: string;
+  streamerId: string;
+  title?: string;
+  duration?: number;
+}
+
+export interface ModerationActionPayload {
+  streamId: string;
+  moderatorId: string;
+  targetUserId: string;
+  action: "MUTE" | "BAN" | "WARN";
+  reason?: string;
+  expiresAt?: string;
+}
+
+export interface LiveTranscodeTask {
+  streamId: string;
+  inputUrl: string;
+  outputDir: string;
+  qualities: Array<{
+    name: string;
+    width: number;
+    height: number;
+    bitrate: string;
+    audioBitrate: string;
+  }>;
+}
+
+export interface RtmpSessionData {
+  streamKey: string;
+  channelId: string;
+  userId: string;
+  channelName: string;
+  streamPath: string;
+  status: string;
+  startedAt: string;
+}
+
+export interface ActiveStream {
+  ffmpeg: ChildProcess;
+  socket: Socket;
+  streamKey: string;
+  startedAt: Date;
+  bytesReceived: number;
+}
+
+export interface VodConvertPayload {
+  streamId: string;
+  channelId: string;
+  streamerId: string;
+  title?: string;
+  duration?: number;
+}
+
+export interface ChatMessagePayload {
+  streamId: string;
+  userId: string;
+  username: string;
+  message: string;
+  imageUrl?: string;
+  flagged: boolean;
+  messageId?: string;
+}
+
+export interface StreamStartPayload {
+  streamId: string;
+  streamKey: string;
+  channelId: string;
+  streamerId: string;
+  title?: string;
+}
+
+export interface StreamEndPayload {
+  streamId: string;
+  streamKey: string;
+  channelId: string;
+  streamerId: string;
+  duration?: number;
+}
+
+export interface ModerationPayload {
+  streamId: string;
+  moderatorId: string;
+  targetUserId: string;
+  action: "MUTE" | "BAN" | "WARN" | "UNBAN";
+  reason?: string;
+  expiresAt?: string;
+  deleteMessages?: boolean;
+}
+
+export interface StreamKeyNotificationPayload {
+  userId: string;
+  channelId?: string;
+  streamKeyId?: string;
+  oldStreamKeyId?: string;
+  newStreamKeyId?: string;
+}
+
+export interface NmsSession {
+  reject: () => void;
 }
 
 export {};

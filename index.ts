@@ -31,11 +31,18 @@ import notificationRoutes from "@routes/notification.route";
 import paymentRoutes from "@routes/payment.route";
 import uploadRoutes from "@routes/upload.route";
 import channelRoutes from "@routes/channel.route";
+import livestreamRoutes from "@routes/livestream.route";
+import streamKeyRoutes from "@routes/streamkey.route";
+import chatRoutes from "@routes/chat.route";
+import browserStreamRoutes from "@routes/browser-stream.route";
 import { attachRedis } from "@middleware/attatchRedis";
+import { initRtmpServer, stopRtmpServer } from "@configs/rtmp.config";
 import { initMinio } from "@configs/minio.config";
 import { initSocket } from "@configs/socket.config";
+import { initLiveSocket } from "@configs/socket-live.config";
 import { connectToRabbitMq } from "@configs/rabbitMQ.config";
 import { consumeMessage } from "@events/consumers/streaming.consumer";
+import { consumeLiveQueue } from "@events/consumers/live.consumer";
 import { googleStrategy } from "@services/user.service";
 import { startAllJobs, stopAllJobs } from "@jobs/index";
 
@@ -96,7 +103,7 @@ const SensitiveEndpointRatelimit = rateLimit({
   }),
 });
 
-// app.use(SensitiveEndpointRatelimit as any);
+app.use(SensitiveEndpointRatelimit as any);
 
 // Load shedding middleware - rejects requests when system is overloaded
 app.use(loadSheddingMiddleware);
@@ -128,35 +135,51 @@ app.use("/api/v1/payments", attachRedis(redisClient), paymentRoutes);
 app.use("/api/v1/uploads", attachRedis(redisClient), uploadRoutes);
 app.use("/api/v1/channels", attachRedis(redisClient), channelRoutes);
 
+// Livestreaming routes
+app.use("/api/v1/livestreams", attachRedis(redisClient), livestreamRoutes);
+app.use("/api/v1/stream-keys", attachRedis(redisClient), streamKeyRoutes);
+app.use("/api/v1/chat", attachRedis(redisClient), chatRoutes);
+app.use("/api/v1/browser-stream", browserStreamRoutes);
+
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new APIError(`Route ${req.originalUrl} not found`, 404));
 });
 
 app.use(ErrorHandlers);
 
-// Initialize WebSocket
+// Initialize HTTP Server
 const server = app.listen(PORT, () => {
-  logger.info(`📽️ Live-Video-Streaming-Service server running at port ${PORT}`);
+  logger.info(`Live-Video-Streaming-Service server running at port ${PORT}`);
 });
-
-initSocket(server);
 
 async function startServer() {
   try {
+    // Initialize Socket.IO with Redis adapter
+    const io = await initSocket(server);
+    initLiveSocket(io);
+
     await connectToDatabase();
     await connectToRabbitMq();
+
+    // Start message consumers
     await consumeMessage();
+    await consumeLiveQueue();
+
     await initMinio();
 
-    // Start background jobs (CDN sync)
+    // Start background jobs (CDN sync, chat cleanup)
     startAllJobs();
 
+    // Initialize RTMP server
+    initRtmpServer();
+
     logger.info(
-      `📽️ Live-Video-Streaming-Service fully initialized on port ${PORT}`,
+      `Live-Video-Streaming-Service fully initialized on port ${PORT}`,
     );
   } catch (error: any) {
     logger.error(
-      "🔥 Failed to initialize Live-Video-Streaming-Service:",
+      "Failed to initialize Live-Video-Streaming-Service:",
       error,
     );
     process.exit(1);
@@ -174,9 +197,10 @@ process.on("unhandledRejection", (err) => {
   process.exit(1);
 });
 
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
   logger.info("SIGINT signal received");
   stopAllJobs();
+  await stopRtmpServer();
   process.exit(0);
 });
 

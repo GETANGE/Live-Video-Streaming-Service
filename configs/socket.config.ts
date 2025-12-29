@@ -1,6 +1,8 @@
 import { Server as HTTPServer } from "http";
-import logger from "@utils/logger";
 import { Server as IOServer, Socket } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
+import redisClient from "@configs/redis.config";
+import logger from "@utils/logger";
 
 let io: IOServer | null = null;
 
@@ -8,8 +10,8 @@ export const getSocketMetrics = () => ({
   connectedSockets: io?.sockets.sockets.size ?? 0,
 });
 
-export const initSocket = (server: HTTPServer) => {
-  if (io) return;
+export const initSocket = (server: HTTPServer): IOServer => {
+  if (io) return io;
 
   io = new IOServer(server, {
     cors: {
@@ -21,6 +23,10 @@ export const initSocket = (server: HTTPServer) => {
     pingTimeout: 60000,
     pingInterval: 25000,
   });
+
+  const pubClient = redisClient.duplicate();
+  const subClient = redisClient.duplicate();
+  io.adapter(createAdapter(pubClient, subClient));
 
   io.on("connection", (socket: Socket) => {
     logger.info(`User connected: ${socket.id}`);
@@ -39,16 +45,17 @@ export const initSocket = (server: HTTPServer) => {
     logger.error("Socket error:", error);
   });
 
-  logger.info("Socket server initialized");
+  logger.info("Socket.IO initialized with Redis adapter");
+  return io;
 };
 
-// Emit notification to user
-export const emitNotification = (userId: string, notification: any): void => {
+export const getIO = (): IOServer | null => io;
+
+export const emitNotification = async (userId: string, notification: any): Promise<void> => {
   if (!io) return;
   io.to(userId).emit("notification", notification);
 };
 
-// Emit video processing progress to user
 export const emitVideoProgress = (
   userId: string,
   videoId: string,
@@ -56,26 +63,24 @@ export const emitVideoProgress = (
     quality: string;
     percent: number;
     stage: "transcoding" | "uploading" | "complete" | "error";
-  },
+  }
 ): void => {
   if (!io) return;
   io.to(userId).emit("video_progress", { videoId, ...progress });
 };
 
-// Emit profile picture upload progress to user
 export const emitProfilePicProgress = (
   userId: string,
   progress: {
     percent: number;
     stage: "processing" | "uploading" | "complete" | "error";
     message?: string;
-  },
+  }
 ): void => {
   if (!io) return;
   io.to(userId).emit("profile_pic_progress", { userId, ...progress });
 };
 
-// Graceful shutdown
 export const shutdownSocket = () => {
   if (io) {
     io.close();
@@ -83,5 +88,3 @@ export const shutdownSocket = () => {
   }
   logger.info("Socket server shut down");
 };
-
-export default io;

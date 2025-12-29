@@ -17,6 +17,12 @@ export const QUEUES = {
     prefetch: 200,
     maxPriority: 10,
   },
+  LIVE: {
+    name: "live_processing_queue",
+    routingKey: "live.process",
+    prefetch: 5,
+    maxPriority: 10,
+  },
 } as const;
 
 // Event types routed to video queue (heavy operations)
@@ -26,6 +32,24 @@ export const VIDEO_EVENTS = [
   "VIDEO_THUMBNAIL",
   "VIDEO_DELETE",
   "CHANNEL_DELETED",
+] as const;
+
+// Event types routed to live queue (livestreaming operations)
+export const LIVE_EVENTS = [
+  "STREAM_START",
+  "STREAM_END",
+  "STREAM_TRANSCODE",
+  "VOD_CONVERT",
+  "CHAT_MESSAGE",
+  "MODERATION_ACTION",
+] as const;
+
+// Event types routed to general queue (notifications)
+export const NOTIFICATION_EVENTS = [
+  "STREAM_KEY_GENERATED",
+  "STREAM_KEY_REVOKED",
+  "STREAM_KEY_ROTATED",
+  "STREAM_KEY_DELETED",
 ] as const;
 
 const RabbitMQConfig = {

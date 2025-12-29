@@ -13,6 +13,12 @@ import { handlePaymentInitiated } from "./eventHandlers/payment_handlers/payment
 import { handlePaymentCallback } from "./eventHandlers/payment_handlers/payment_callback";
 import { handleChannelCreated } from "./eventHandlers/channel_handlers/channel_created";
 import { handleChannelUpdated } from "./eventHandlers/channel_handlers/channel_updated";
+import {
+  handleStreamKeyGenerated,
+  handleStreamKeyRevoked,
+  handleStreamKeyRotated,
+  handleStreamKeyDeleted,
+} from "./eventHandlers/notification_handlers/stream_key_notification";
 import RabbitMQConfig, { QUEUES } from "@constants/constant";
 import logger from "@utils/logger";
 
@@ -39,6 +45,11 @@ const generalEventHandlers: Record<string, (payload: any) => Promise<void>> = {
   // Channel events (lightweight)
   CHANNEL_CREATED: handleChannelCreated,
   CHANNEL_UPDATED: handleChannelUpdated,
+  // Stream key notifications
+  STREAM_KEY_GENERATED: handleStreamKeyGenerated,
+  STREAM_KEY_REVOKED: handleStreamKeyRevoked,
+  STREAM_KEY_ROTATED: handleStreamKeyRotated,
+  STREAM_KEY_DELETED: handleStreamKeyDeleted,
 };
 
 let processedCount = 0;

@@ -18,7 +18,7 @@ const QUALITY_PRESETS = [
   { name: "360p", width: 640, height: 360, bitrate: "800k", audioBitrate: "96k" },
   { name: "720p", width: 1280, height: 720, bitrate: "2500k", audioBitrate: "128k" },
   { name: "1080p", width: 1920, height: 1080, bitrate: "5000k", audioBitrate: "192k" },
-  // { name: "2160p", width: 3840, height: 2160, bitrate: "10000k", audioBitrate: "256k" },
+  { name: "2160p", width: 3840, height: 2160, bitrate: "10000k", audioBitrate: "256k" },
 ];
 
 interface HLSOutput {

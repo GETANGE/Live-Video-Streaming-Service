@@ -42,7 +42,20 @@ export const getRabbitMQChannel = async (): Promise<any> => {
     QUEUES.GENERAL.routingKey,
   );
 
-  logger.info(`Queues initialized: ${QUEUES.VIDEO.name}, ${QUEUES.GENERAL.name}`);
+  // Assert LIVE queue (moderate prefetch for livestreaming)
+  await channel.assertQueue(QUEUES.LIVE.name, {
+    durable: true,
+    arguments: {
+      "x-max-priority": QUEUES.LIVE.maxPriority,
+    },
+  });
+  await channel.bindQueue(
+    QUEUES.LIVE.name,
+    RabbitMQConfig.exchangeName,
+    QUEUES.LIVE.routingKey,
+  );
+
+  logger.info(`Queues initialized: ${QUEUES.VIDEO.name}, ${QUEUES.GENERAL.name}, ${QUEUES.LIVE.name}`);
 
   return channel;
 };
@@ -69,6 +82,18 @@ export const getGeneralChannel = async (): Promise<any> => {
   await generalChannel.prefetch(QUEUES.GENERAL.prefetch);
 
   return generalChannel;
+};
+
+// Get a dedicated channel for live streaming processing
+export const getLiveChannel = async (): Promise<any> => {
+  if (!connection) {
+    await getRabbitMQChannel();
+  }
+
+  const liveChannel = await connection.createChannel();
+  await liveChannel.prefetch(QUEUES.LIVE.prefetch);
+
+  return liveChannel;
 };
 
 export const connectToRabbitMq = async () => {
