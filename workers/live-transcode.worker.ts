@@ -1,33 +1,18 @@
 import { parentPort, workerData } from "worker_threads";
+import { LiveTranscodeTask, QualityPreset } from "@types";
 import ffmpeg from "fluent-ffmpeg";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 import { execSync } from "child_process";
 
-// Live transcoding configuration
-interface LiveTranscodeTask {
-  streamId: string;
-  inputUrl: string; // RTMP URL
-  outputDir: string;
-  qualities: QualityPreset[];
-}
 
-interface QualityPreset {
-  name: string;
-  width: number;
-  height: number;
-  bitrate: string;
-  audioBitrate: string;
-}
-
-// Low-latency HLS settings for live streaming
-const LIVE_HLS_SETTINGS = {
-  segmentDuration: 2, // 2 seconds for lower latency
-  playlistSize: 6, // Keep 6 segments (12s buffer)
-  deleteThreshold: 10, // Delete segments after 10 from playlist
+const LL_HLS_SETTINGS = {
+  segmentDuration: 1,
+  partDuration: 0.2,
+  playlistSize: 10,
+  deleteThreshold: 6,
 };
 
-// Default quality presets for live streaming
 const DEFAULT_QUALITIES: QualityPreset[] = [
   { name: "360p", width: 640, height: 360, bitrate: "800k", audioBitrate: "96k" },
   { name: "720p", width: 1280, height: 720, bitrate: "2500k", audioBitrate: "128k" },
@@ -35,7 +20,6 @@ const DEFAULT_QUALITIES: QualityPreset[] = [
   { name: "2160", width: 3840, height: 2160, bitrate: "10000k", audioBitrate: "384k" },
 ];
 
-// Check for hardware acceleration support
 const detectHardwareAcceleration = (): "nvenc" | "vaapi" | "cpu" => {
   const hwaccel = process.env.FFMPEG_HWACCEL;
   if (hwaccel) return hwaccel as any;
@@ -55,7 +39,6 @@ const detectHardwareAcceleration = (): "nvenc" | "vaapi" | "cpu" => {
 
 const HWACCEL = detectHardwareAcceleration();
 
-// Get encoder options based on hardware acceleration
 const getEncoderOptions = (preset: QualityPreset): string[] => {
   const bitrateNum = parseInt(preset.bitrate);
 
@@ -63,8 +46,8 @@ const getEncoderOptions = (preset: QualityPreset): string[] => {
     case "nvenc":
       return [
         "-c:v h264_nvenc",
-        "-preset p1", // Fastest preset for live
-        "-tune ll", // Low latency tune
+        "-preset p1",
+        "-tune ll",
         "-zerolatency 1",
         "-rc vbr",
         `-b:v ${preset.bitrate}`,
@@ -84,8 +67,8 @@ const getEncoderOptions = (preset: QualityPreset): string[] => {
     default:
       return [
         "-c:v libx264",
-        "-preset ultrafast", // Fastest for live
-        "-tune zerolatency", // Zero latency for live
+        "-preset ultrafast",
+        "-tune zerolatency",
         `-b:v ${preset.bitrate}`,
         `-maxrate ${preset.bitrate}`,
         `-bufsize ${preset.bitrate}`,
@@ -94,7 +77,6 @@ const getEncoderOptions = (preset: QualityPreset): string[] => {
   }
 };
 
-// Transcode a single quality variant
 const transcodeQuality = (
   inputUrl: string,
   outputDir: string,
@@ -103,34 +85,35 @@ const transcodeQuality = (
   return new Promise((resolve, reject) => {
     const qualityDir = join(outputDir, preset.name);
 
-    // Ensure output directory exists
     if (!existsSync(qualityDir)) {
       mkdirSync(qualityDir, { recursive: true });
     }
 
     const playlistPath = join(qualityDir, "playlist.m3u8");
-    const segmentPath = join(qualityDir, "segment_%05d.ts");
+    const segmentPath = join(qualityDir, "segment_%05d.m4s");
 
     const command = ffmpeg(inputUrl);
 
-    // Input options for live stream
     command.inputOptions([
-      "-re", // Read input at native frame rate
-      "-fflags +genpts+nobuffer", // Generate timestamps, no buffering
-      "-flags low_delay", // Low delay mode
+      "-re",
+      "-fflags +genpts+nobuffer",
+      "-flags low_delay",
     ]);
 
-    // Output options for live HLS
     const outputOptions = [
       ...getEncoderOptions(preset),
       `-s ${preset.width}x${preset.height}`,
       "-c:a aac",
       `-b:a ${preset.audioBitrate}`,
       "-f hls",
-      `-hls_time ${LIVE_HLS_SETTINGS.segmentDuration}`,
-      `-hls_list_size ${LIVE_HLS_SETTINGS.playlistSize}`,
-      `-hls_delete_threshold ${LIVE_HLS_SETTINGS.deleteThreshold}`,
-      "-hls_flags delete_segments+append_list+discont_start+omit_endlist",
+      `-hls_time ${LL_HLS_SETTINGS.segmentDuration}`,
+      `-hls_list_size ${LL_HLS_SETTINGS.playlistSize}`,
+      `-hls_delete_threshold ${LL_HLS_SETTINGS.deleteThreshold}`,
+      "-hls_flags delete_segments+append_list+program_date_time+independent_segments+split_by_time",
+      "-hls_segment_type fmp4",
+      `-hls_fmp4_init_filename ${preset.name}_init.mp4`,
+      `-hls_playlist_type event`,
+      `-master_pl_name master.m3u8`,
       `-hls_segment_filename ${segmentPath}`,
     ];
 
@@ -173,21 +156,27 @@ const transcodeQuality = (
   });
 };
 
-// Generate master playlist for adaptive bitrate streaming
 const generateMasterPlaylist = (outputDir: string, qualities: QualityPreset[]): void => {
   const masterPlaylistPath = join(outputDir, "master.m3u8");
 
-  let content = "#EXTM3U\n#EXT-X-VERSION:3\n\n";
+  let content = "#EXTM3U\n";
+  content += "#EXT-X-VERSION:7\n";
+  content += "#EXT-X-INDEPENDENT-SEGMENTS\n\n";
 
   for (const quality of qualities) {
-    const bandwidth = parseInt(quality.bitrate) * 1000; // Convert to bits
+    const bandwidth = parseInt(quality.bitrate) * 1000;
+    const avgBandwidth = Math.round(bandwidth * 0.8);
     const resolution = `${quality.width}x${quality.height}`;
+    const codecs = quality.height >= 1080
+      ? "avc1.640028,mp4a.40.2"
+      : quality.height >= 720
+        ? "avc1.64001f,mp4a.40.2"
+        : "avc1.640015,mp4a.40.2";
 
-    content += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${resolution}\n`;
+    content += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},AVERAGE-BANDWIDTH=${avgBandwidth},RESOLUTION=${resolution},CODECS="${codecs}",FRAME-RATE=30\n`;
     content += `${quality.name}/playlist.m3u8\n\n`;
   }
 
-  // Write master playlist
   const fs = require("fs");
   fs.writeFileSync(masterPlaylistPath, content);
 
@@ -197,7 +186,6 @@ const generateMasterPlaylist = (outputDir: string, qualities: QualityPreset[]): 
   });
 };
 
-// Main transcoding function
 const transcodeLive = async (task: LiveTranscodeTask): Promise<void> => {
   const { streamId, inputUrl, outputDir, qualities } = task;
 
@@ -210,15 +198,12 @@ const transcodeLive = async (task: LiveTranscodeTask): Promise<void> => {
     qualities: qualities.map((q) => q.name),
   });
 
-  // Ensure output directory exists
   if (!existsSync(outputDir)) {
     mkdirSync(outputDir, { recursive: true });
   }
 
-  // Generate master playlist first
   generateMasterPlaylist(outputDir, qualities);
 
-  // Start all quality transcodes in parallel
   const transcodePromises = qualities.map((preset) =>
     transcodeQuality(inputUrl, outputDir, preset)
   );
@@ -239,10 +224,8 @@ const transcodeLive = async (task: LiveTranscodeTask): Promise<void> => {
   }
 };
 
-// Run transcoding when worker starts
 const task = workerData as LiveTranscodeTask;
 
-// Use default qualities if none provided
 if (!task.qualities || task.qualities.length === 0) {
   task.qualities = DEFAULT_QUALITIES;
 }
@@ -263,7 +246,6 @@ transcodeLive(task)
     process.exit(1);
   });
 
-// Handle shutdown signals
 process.on("SIGTERM", () => {
   parentPort?.postMessage({
     type: "shutdown",

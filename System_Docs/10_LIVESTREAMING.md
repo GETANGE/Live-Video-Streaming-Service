@@ -5,7 +5,8 @@
 Real-time video broadcasting with:
 - RTMP ingest via OBS/streaming software
 - Browser-based streaming via Socket.IO
-- Multi-quality HLS output (360p, 720p, 1080p, 4K)
+- **LL-HLS (Low-Latency HLS)** output (360p, 720p, 1080p, 4K)
+- 2-5 second latency (vs 12-15s with standard HLS)
 - Real-time chat with moderation
 - Automatic VOD conversion
 - Horizontal scaling with Redis adapter
@@ -45,8 +46,8 @@ Real-time video broadcasting with:
 │           │                                      │
 │           ▼                                      │
 │    ┌─────────────┐                              │
-│    │   FFmpeg    │──► HLS Segments ──► /live/   │
-│    │ Transcoder  │                              │
+│    │   FFmpeg    │──► LL-HLS (fMP4) ──► /live/  │
+│    │ Transcoder  │   (2-5s latency)             │
 │    └─────────────┘                              │
 └─────────────────────────────────────────────────┘
 ```
@@ -97,12 +98,12 @@ Two ingest methods converge into one delivery pipeline:
 │  live-transcode.worker.ts                                           │
 │       │                                                             │
 │       ├──► 360p  (800k)   ──┐                                       │
-│       ├──► 720p  (2500k)  ──┼──► master.m3u8                        │
-│       ├──► 1080p (5000k)  ──┤                                       │
+│       ├──► 720p  (2500k)  ──┼──► master.m3u8 (LL-HLS)               │
+│       ├──► 1080p (5000k)  ──┤    (fMP4 segments, 1s duration)       │
 │       └──► 4K    (10000k) ──┘                                       │
 │                                                                     │
 │       ▼                                                             │
-│  Nginx (live-edge) → Viewers (Adaptive Bitrate)                     │
+│  Nginx (live-edge) → Viewers (Adaptive Bitrate, 2-5s latency)       │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -266,12 +267,37 @@ Worker thread for multi-quality HLS output.
 - VAAPI (Intel/AMD)
 - CPU fallback (libx264)
 
-**HLS Settings**:
+**LL-HLS (Low-Latency HLS) Settings**:
 ```
-Segment Duration: 2 seconds
-Playlist Size: 6 segments
-Delete Threshold: 10 segments
-Flags: delete_segments, append_list, omit_endlist
+Segment Duration: 1 second (vs 2-4s standard HLS)
+Playlist Size: 10 segments
+Delete Threshold: 6 segments
+Segment Format: fMP4 (.m4s) - lower overhead than .ts
+Version: 7 (required for fMP4)
+Flags: delete_segments, append_list, program_date_time, independent_segments, split_by_time
+```
+
+**Latency Comparison**:
+| Protocol | Typical Latency | Use Case |
+|----------|-----------------|----------|
+| Standard HLS | 12-15 seconds | VOD, non-interactive |
+| **LL-HLS** | 2-5 seconds | Live streaming, interactive |
+| WebRTC | <1 second | Real-time communication |
+
+**LL-HLS Master Playlist Example**:
+```m3u8
+#EXTM3U
+#EXT-X-VERSION:7
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-STREAM-INF:BANDWIDTH=800000,AVERAGE-BANDWIDTH=640000,RESOLUTION=640x360,CODECS="avc1.640015,mp4a.40.2",FRAME-RATE=30
+360p/playlist.m3u8
+
+#EXT-X-STREAM-INF:BANDWIDTH=2500000,AVERAGE-BANDWIDTH=2000000,RESOLUTION=1280x720,CODECS="avc1.64001f,mp4a.40.2",FRAME-RATE=30
+720p/playlist.m3u8
+
+#EXT-X-STREAM-INF:BANDWIDTH=5000000,AVERAGE-BANDWIDTH=4000000,RESOLUTION=1920x1080,CODECS="avc1.640028,mp4a.40.2",FRAME-RATE=30
+1080p/playlist.m3u8
 ```
 
 **Viewer Experience**:
@@ -632,9 +658,10 @@ SERVER_ID=app1
 # FFmpeg
 FFMPEG_HWACCEL=nvenc  # nvenc, vaapi, or cpu
 
-# Live Settings
-LIVE_HLS_SEGMENT_DURATION=2
-LIVE_HLS_PLAYLIST_SIZE=6
+# LL-HLS Settings
+LIVE_HLS_SEGMENT_DURATION=1    # 1 second for LL-HLS
+LIVE_HLS_PLAYLIST_SIZE=10      # Keep 10 segments
+LIVE_HLS_PART_DURATION=0.2     # 200ms partial segments
 ```
 
 ---

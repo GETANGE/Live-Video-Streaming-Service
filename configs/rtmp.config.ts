@@ -36,7 +36,8 @@ const config = {
       {
         app: "live",
         hls: true,
-        hlsFlags: "[hls_time=2:hls_list_size=6:hls_flags=delete_segments]",
+        // LL-HLS settings: 1s segments, fMP4 format, independent segments
+        hlsFlags: "[hls_time=1:hls_list_size=10:hls_flags=delete_segments+program_date_time+independent_segments+split_by_time:hls_segment_type=fmp4]",
         hlsKeep: false,
         dash: false,
       },

@@ -394,6 +394,21 @@ export interface StreamKeyNotificationPayload {
   newStreamKeyId?: string;
 }
 
+export interface LiveTranscodeTask {
+  streamId: string;
+  inputUrl: string;
+  outputDir: string;
+  qualities: QualityPreset[];
+}
+
+export interface QualityPreset {
+  name: string;
+  width: number;
+  height: number;
+  bitrate: string;
+  audioBitrate: string;
+}
+
 export interface NmsSession {
   reject: () => void;
 }
