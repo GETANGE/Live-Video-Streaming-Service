@@ -1,4 +1,3 @@
-import * as livestreamService from "@services/livestream.service";
 import { emitStreamStart, emitViewerCount } from "@configs/socket-live.config";
 import { StreamStartPayload } from "@types";
 import logger from "@utils/logger";
@@ -7,13 +6,13 @@ import logger from "@utils/logger";
 export const handleStreamStart = async (
   payload: StreamStartPayload
 ): Promise<void> => {
-  const { streamId, streamKey, channelId, streamerId } = payload;
+  const { streamId, channelId, streamerId } = payload;
 
   logger.info(`[LIVE_HANDLER] Processing stream start: ${streamId}`);
 
   try {
-    // Update stream status to LIVE
-    await livestreamService.startStream(streamKey);
+    // Stream is already started by the NMS callback (rtmp-callback.controller)
+    // Here we just emit Socket.IO events to notify connected clients
 
     // Emit Socket.IO event to notify clients
     emitStreamStart(streamId, {

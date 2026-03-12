@@ -106,6 +106,18 @@ services:
       timeout: 5s
       retries: 5
 
+  hls-server:
+    image: nginx:latest
+    container_name: hls-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx-hls.conf:/etc/nginx/nginx.conf:ro
+      - /tmp/media:/tmp/media:ro
+    networks:
+      - live-video-streaming-service
+    restart: unless-stopped
+
   rtmp-server:
     image: illuspas/node-media-server:latest
     container_name: rtmp-server
@@ -115,6 +127,9 @@ services:
       - "8443:8443"
     volumes:
       - rtmp_media:/tmp/media
+      - ./nms-config.json:/node-media-server/bin/config.json:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - live-video-streaming-service
     restart: unless-stopped

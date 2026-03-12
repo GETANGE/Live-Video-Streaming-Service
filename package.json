@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "NODE_ENV=development bun --watch index.ts",
     "error": "npx tsc --noEmit",
-    "start": "NODE_ENV=production bun index.ts"
+    "start": "NODE_ENV=production bun index.ts",
+    "db:seed": "bun prisma/seed.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

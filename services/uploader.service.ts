@@ -15,6 +15,7 @@ import {
   deleteFromCDN,
   clearCDNCache,
   getContentUrl,
+  trackVideoView,
 } from "@services/cdn.service";
 import crypto from "crypto";
 import logger from "@utils/logger";
@@ -218,6 +219,7 @@ export const pushVideoToCDN = async (
 };
 
 // Get video URLs with CDN preference
+// Tracks views and triggers lazy CDN sync for popular videos
 export const getVideoUrls = async (
   videoId: string,
 ): Promise<{
@@ -228,6 +230,8 @@ export const getVideoUrls = async (
   const [thumbnail, stream] = await Promise.all([
     getContentUrl("thumbnail", videoId),
     getContentUrl("stream", videoId),
+    // Track view count — triggers CDN sync at threshold (non-blocking)
+    trackVideoView(videoId).catch(() => {}),
   ]);
 
   return {

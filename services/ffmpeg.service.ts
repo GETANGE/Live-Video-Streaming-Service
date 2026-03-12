@@ -35,20 +35,24 @@ export const getVideoMetadata = (
   });
 };
 
-// Generate thumbnail from video
+// Generate thumbnail from video (preserves aspect ratio)
 export const generateThumbnail = (
   inputPath: string,
   outputPath: string,
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
+    const folder = outputPath.substring(0, outputPath.lastIndexOf("/"));
+    const filename = outputPath.split("/").pop();
+
     ffmpeg(inputPath)
-      .screenshots({
-        count: 1,
-        folder: outputPath.substring(0, outputPath.lastIndexOf("/")),
-        filename: outputPath.split("/").pop(),
-        size: "640x360",
-      })
       .on("end", () => resolve())
-      .on("error", reject);
+      .on("error", reject)
+      .outputOptions([
+        "-vframes", "1",
+        "-ss", "1",
+        "-vf", "scale=640:-2",
+      ])
+      .output(join(folder, filename!))
+      .run();
   });
 };

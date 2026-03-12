@@ -12,7 +12,7 @@ export const generateRtmpUrl = (streamKey: string): string => {
 };
 
 export const generateHlsUrl = (streamKey: string): string => {
-  const baseUrl = process.env.HLS_BASE_URL || "http://localhost:8000";
+  const baseUrl = process.env.HLS_BASE_URL || "http://localhost:8888";
   return `${baseUrl}/live/${streamKey}/index.m3u8`;
 };
 

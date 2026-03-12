@@ -8,9 +8,6 @@ import dotenv from "dotenv";
 import passport from "passport";
 import cors from "cors";
 import redisClient from "@configs/redis.config";
-import rateLimit from "express-rate-limit";
-import { RateLimiterMemory } from "rate-limiter-flexible";
-import RedisStore from "rate-limit-redis";
 import logger, { closeLogger } from "@utils/logger";
 import { requestLogger } from "@middleware/requestLogger.middleware";
 import { connectToDatabase } from "@configs/database.config";
@@ -35,6 +32,7 @@ import livestreamRoutes from "@routes/livestream.route";
 import streamKeyRoutes from "@routes/streamkey.route";
 import chatRoutes from "@routes/chat.route";
 import browserStreamRoutes from "@routes/browser-stream.route";
+import rtmpCallbackRoutes from "@routes/rtmp-callback.route";
 import { attachRedis } from "@middleware/attatchRedis";
 import { initRtmpServer, stopRtmpServer } from "@configs/rtmp.config";
 import { initMinio } from "@configs/minio.config";
@@ -63,47 +61,8 @@ app.use(passport.initialize());
 app.use(requestLogger);
 app.use(cors(corsOptions));
 
-const rateLimiter = new RateLimiterMemory({
-  keyPrefix: "global",
-  points: 10,
-  duration: 1, // 10 requests per second
-});
-
-app.use((req: any, res: Response, next: NextFunction) => {
-  // Skip rate limiting for health checks and metrics (Prometheus scraping)
-  if (req.path === "/health" || req.path === "/metrics" || req.path === "/ready") {
-    return next();
-  }
-  rateLimiter
-    .consume(req.ip)
-    .then(() => next())
-    .catch(() => {
-      logger.warn(`⚠️ Global rate limit exceeded for IP: ${req.ip}`);
-      next(new APIError("Too many requests", 429));
-    });
-});
-
-const SensitiveEndpointRatelimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 mins
-  limit: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req: Request) => {
-    // Skip rate limiting for health checks and metrics (Prometheus scraping)
-    return req.path === "/health" || req.path === "/metrics" || req.path === "/ready";
-  },
-  handler: (req: Request, res: Response, next: NextFunction) => {
-    logger.warn(`⛔ Sensitive endpoint limit exceeded | IP: ${req.ip}`);
-    next(new APIError("Too many requests", 429));
-  },
-  store: new RedisStore({
-    sendCommand: (...args: [string, ...string[]]): Promise<any> => {
-      return redisClient.call(...args);
-    },
-  }),
-});
-
-app.use(SensitiveEndpointRatelimit as any);
+// Rate limiting disabled for development
+// TODO: Re-enable for production
 
 // Load shedding middleware - rejects requests when system is overloaded
 app.use(loadSheddingMiddleware);
@@ -128,6 +87,9 @@ app.get("/metrics", metricsHandler);
 // Kubernetes readiness probe
 app.get("/ready", readinessHandler);
 
+// HLS segments served by Nginx (hls-server container on port 8080)
+// No static file serving here — Nginx handles it at 50k+ req/s
+
 app.use("/api/v1/auth", attachRedis(redisClient), authRoutes);
 app.use("/api/v1/subscriptions", attachRedis(redisClient), subscriptionRoutes);
 app.use("/api/v1/notifications", attachRedis(redisClient), notificationRoutes);
@@ -140,6 +102,9 @@ app.use("/api/v1/livestreams", attachRedis(redisClient), livestreamRoutes);
 app.use("/api/v1/stream-keys", attachRedis(redisClient), streamKeyRoutes);
 app.use("/api/v1/chat", attachRedis(redisClient), chatRoutes);
 app.use("/api/v1/browser-stream", browserStreamRoutes);
+
+// NMS Docker container callback (no auth — internal only)
+app.use("/api/v1/rtmp-callback", rtmpCallbackRoutes);
 
 
 app.use((req: Request, res: Response, next: NextFunction) => {

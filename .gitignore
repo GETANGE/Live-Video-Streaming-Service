@@ -8,6 +8,7 @@ lerna-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+client_secret_623112727163-mtiho132uu0s4mh2v3vo8gm9e7g1pnvf.apps.googleusercontent.com.json
 
 # Runtime data
 pids
@@ -33,6 +34,7 @@ bower_components
 
 # node-waf configuration
 .lock-wscript
+.claude
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release

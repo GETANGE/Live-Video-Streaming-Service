@@ -2,6 +2,8 @@ import cron, { ScheduledTask } from "node-cron";
 import { prisma } from "@configs/database.config";
 import { streamFromMinio } from "@helpers/hls.helper-functions";
 import { uploadImage, isCloudinaryConfigured } from "@services/cdn.service";
+import { getCDNCacheKeys } from "@helpers/cacheInvalidations/cdnCacheInvalidation";
+import redisClient from "@configs/redis.config";
 import logger from "@utils/logger";
 
 // Cron task reference
@@ -75,7 +77,7 @@ export const syncPendingToCDN = async (): Promise<SyncResult> => {
       );
 
       if (cdnResult) {
-        // Mark as synced
+        // Mark as synced in DB
         await prisma.video.update({
           where: { id: video.id },
           data: {
@@ -85,6 +87,11 @@ export const syncPendingToCDN = async (): Promise<SyncResult> => {
             cdnSyncedAt: new Date(),
           },
         });
+
+        // Populate Redis cache so getContentUrl() serves CDN URL immediately
+        const cacheKeys = await getCDNCacheKeys();
+        await redisClient.setex(cacheKeys.thumbnail(video.id), 3600, cdnResult.cdnUrl);
+
         result.synced++;
       } else {
         // Increment attempt counter

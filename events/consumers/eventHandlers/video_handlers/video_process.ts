@@ -32,6 +32,10 @@ export const handleVideoProcess = async (
       stage: "uploading",
     });
 
+    // Check if thumbnail was eagerly synced to CDN (cache populated by uploader)
+    const { getContentUrl } = await import("@services/cdn.service");
+    const thumbnailInfo = await getContentUrl("thumbnail", videoId);
+
     // Save to database
     await prisma.video.create({
       data: {
@@ -44,6 +48,10 @@ export const handleVideoProcess = async (
         originalUrl: result.originalUrl,
         thumbnailUrl: result.thumbnailUrl,
         streamingUrl: result.streamingUrl,
+        // Persist CDN URL if thumbnail was synced to Cloudinary
+        cdnUrl: thumbnailInfo.source === "cdn" ? thumbnailInfo.url : undefined,
+        cdnSynced: thumbnailInfo.source === "cdn",
+        cdnSyncedAt: thumbnailInfo.source === "cdn" ? new Date() : undefined,
       },
     });
 

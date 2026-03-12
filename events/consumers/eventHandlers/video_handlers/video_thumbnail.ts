@@ -1,5 +1,6 @@
 import { prisma } from "@configs/database.config";
 import { uploadThumbnail } from "@services/uploader.service";
+import { syncThumbnailToCDN } from "@services/cdn.service";
 import { VideoThumbnailPayload } from "@types";
 import logger from "@utils/logger";
 
@@ -34,10 +35,30 @@ export const handleVideoThumbnail = async (
     // Upload thumbnail to MinIO
     const result = await uploadThumbnail(imageBuffer, videoId);
 
-    // Update video record with new thumbnail URL
+    // Sync to Cloudinary CDN (non-blocking, best-effort)
+    const cdnResult = await syncThumbnailToCDN(videoId, imageBuffer).catch((err) => {
+      logger.warn(`CDN thumbnail sync failed for ${videoId}:`, err);
+      return null;
+    });
+
+    // Update video record with thumbnail URL and CDN info
     await prisma.video.update({
       where: { id: videoId },
-      data: { thumbnailUrl: result.url },
+      data: {
+        thumbnailUrl: result.url,
+        // Update CDN fields if sync succeeded
+        ...(cdnResult && {
+          cdnUrl: cdnResult.cdnUrl,
+          publicId: cdnResult.publicId,
+          cdnSynced: true,
+          cdnSyncedAt: new Date(),
+        }),
+        // Reset sync tracking if CDN sync failed (background job will retry)
+        ...(!cdnResult && {
+          cdnSynced: false,
+          cdnSyncAttempts: 0,
+        }),
+      },
     });
 
     logger.info(`✅ Thumbnail uploaded for video: ${videoId}`);

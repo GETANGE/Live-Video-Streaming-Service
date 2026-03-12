@@ -104,8 +104,9 @@ export const uploadVideo = async (
         status: "processing",
       },
     });
-  } catch (error) {
-    logger.error("Video upload error:", error);
+  } catch (error: any) {
+    logger.error("Video upload error: %s", error?.message || error);
+    logger.error("Stack: %s", error?.stack);
     next(error);
   }
 };
@@ -146,6 +147,49 @@ export const uploadThumbnail = async (
     });
   } catch (error) {
     logger.error("Thumbnail upload error:", error);
+    next(error);
+  }
+};
+
+// Get video details (metadata + URLs)
+export const getVideoDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { videoId } = req.params;
+    if (!videoId) throw new APIError("videoId is required", 400);
+
+    const { prisma } = await import("@configs/database.config");
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      include: {
+        user: { select: { id: true, username: true, imageUrl: true } },
+        channel: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            thumbnailUrl: true,
+            ownerId: true,
+            owner: { select: { id: true, username: true, imageUrl: true } },
+            _count: { select: { subscriptions: true, videos: true } },
+          },
+        },
+      },
+    });
+
+    if (!video) throw new APIError("Video not found", 404);
+
+    const urls = await uploaderService.getVideoUrls(videoId);
+
+    res.status(200).json({
+      success: true,
+      data: { ...video, urls },
+    });
+  } catch (error) {
+    logger.error("Get video details error:", error);
     next(error);
   }
 };

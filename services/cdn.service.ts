@@ -9,7 +9,7 @@ const CDN_CACHE_TTL = 3600; // 1 hour
 
 // Check if Cloudinary is configured
 export const isCloudinaryConfigured = (): boolean => {
-  return !!process.env.CLOUDINARY_CLOUD_NAME;
+  return !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 };
 
 // Raw upload functions (wrapped by circuit breakers)
@@ -182,7 +182,7 @@ export const syncVideoToCDN = async (
   }
 };
 
-// Get content URL - returns CDN URL if cached, MinIO fallback
+// Get content URL - returns CDN URL if cached, checks DB, then MinIO fallback
 export const getContentUrl = async (
   type: "thumbnail" | "video" | "stream",
   id: string,
@@ -202,12 +202,32 @@ export const getContentUrl = async (
       break;
   }
 
+  // 1. Check Redis cache
   const cached = await redisClient.get(cacheKey);
   if (cached) {
     return { url: cached, source: "cdn" };
   }
 
-  // Fallback to MinIO
+  // 2. Check DB for persisted CDN URL (survives cache expiry)
+  if (type === "thumbnail" || type === "video") {
+    try {
+      const { prisma } = await import("@configs/database.config");
+      const video = await prisma.video.findUnique({
+        where: { id },
+        select: { cdnUrl: true, cdnSynced: true },
+      });
+
+      if (video?.cdnSynced && video.cdnUrl && type === "thumbnail") {
+        // Re-populate cache from DB
+        await redisClient.setex(cacheKey, CDN_CACHE_TTL, video.cdnUrl);
+        return { url: video.cdnUrl, source: "cdn" };
+      }
+    } catch (error) {
+      logger.warn(`Failed to check DB for CDN URL (video ${id}):`, error);
+    }
+  }
+
+  // 3. Fallback to MinIO
   let minioPath: string;
   switch (type) {
     case "thumbnail":
@@ -269,6 +289,49 @@ export const getCDNStreamingUrl = (publicId: string): string => {
     format: "m3u8",
     streaming_profile: "hd",
   });
+};
+
+// ─── On-demand video CDN sync (popularity-based) ───
+
+const VIEW_COUNT_KEY = (id: string) => `video:views:${id}`;
+const CDN_SYNC_LOCK_KEY = (id: string) => `cdn:sync-lock:${id}`;
+const CDN_VIDEO_SYNC_THRESHOLD = 50; // Sync to CDN after this many views
+
+// Increment view count and trigger CDN sync if threshold is crossed
+export const trackVideoView = async (videoId: string): Promise<void> => {
+  const views = await redisClient.incr(VIEW_COUNT_KEY(videoId));
+
+  if (views === CDN_VIDEO_SYNC_THRESHOLD) {
+    // Only trigger once — use a lock to prevent duplicate syncs
+    const locked = await redisClient.set(
+      CDN_SYNC_LOCK_KEY(videoId),
+      "1",
+      "EX",
+      3600,
+      "NX",
+    );
+
+    if (locked) {
+      // Check if already synced in DB
+      const { prisma } = await import("@configs/database.config");
+      const video = await prisma.video.findUnique({
+        where: { id: videoId },
+        select: { cdnSynced: true, cdnUrl: true },
+      });
+
+      // Only sync if not already on CDN (cdnUrl tracks thumbnail, check video cache)
+      const cacheKeys = await getCDNCacheKeys();
+      const alreadySynced = await redisClient.get(cacheKeys.video(videoId));
+
+      if (!alreadySynced) {
+        logger.info(`Video ${videoId} reached ${CDN_VIDEO_SYNC_THRESHOLD} views, triggering CDN sync`);
+        // Fire-and-forget — don't block the request
+        syncVideoToCDN(videoId, `raw/${videoId}.mp4`).catch((err) =>
+          logger.warn(`Lazy CDN video sync failed for ${videoId}:`, err),
+        );
+      }
+    }
+  }
 };
 
 // Get circuit breaker stats for monitoring

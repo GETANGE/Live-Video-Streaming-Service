@@ -69,10 +69,7 @@ export const getChannelByName = async (name: string) => {
 // Get user's channels
 export const getMyChannels = async (ownerId: string) => {
   const channels = await channelRepo.getChannelsByOwner(ownerId);
-  if (!channels || channels.length === 0) {
-    throw new APIError("You don't have any channels yet", 404);
-  }
-  return channels;
+  return channels || [];
 };
 
 // Get all channels

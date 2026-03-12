@@ -40,7 +40,7 @@ export const googleStrategy = () => {
           }
 
           // Check if user already exists
-          let user = await repo.getUserByEmailRepo(email);
+          let user = await repo.findUserByEmailRepo(email);
 
           // If not, create user
           if (!user) {

@@ -14,6 +14,8 @@ export const transcodeVariant = (
   return new Promise((resolve, reject) => {
     const playlistPath = join(outputDir, "playlist.m3u8");
 
+    const bitrateNum = parseInt(preset.bitrate);
+
     ffmpeg(inputPath)
       .outputOptions([
         `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease,pad=${preset.width}:${preset.height}:(ow-iw)/2:(oh-ih)/2`,
@@ -21,8 +23,11 @@ export const transcodeVariant = (
         "-preset fast",
         "-crf 22",
         `-b:v ${preset.bitrate}`,
-        `-maxrate ${preset.bitrate}`,
-        `-bufsize ${parseInt(preset.bitrate) * 2}k`,
+        `-maxrate ${Math.round(bitrateNum * 1.5)}k`,
+        `-bufsize ${bitrateNum * 2}k`,
+        `-g ${segmentDuration * 30}`,
+        `-keyint_min ${segmentDuration * 30}`,
+        "-sc_threshold 0",
         "-c:a aac",
         `-b:a ${preset.audioBitrate}`,
         `-hls_time ${segmentDuration}`,

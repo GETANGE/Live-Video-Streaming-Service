@@ -9,7 +9,8 @@ const HLS_PLAYLIST_TYPE = "vod";
 
 const detectHardwareAcceleration = (): "nvenc" | "vaapi" | "videotoolbox" | "cpu" => {
   const hwaccel = process.env.FFMPEG_HWACCEL;
-  if (hwaccel) return hwaccel as any;
+  if (hwaccel && hwaccel !== "none") return hwaccel as any;
+  if (hwaccel === "none") return "cpu";
 
   try {
     execSync("nvidia-smi", { stdio: "ignore" });
@@ -83,6 +84,8 @@ const transcode = (task: TranscodeTask): Promise<void> => {
             `-b:v ${preset.bitrate}`,
             `-maxrate ${bitrateNum * 1.5}k`,
             `-bufsize ${bitrateNum * 2}k`,
+            `-g ${segmentDuration * 30}`,
+            "-sc_threshold 0",
           ];
 
         case "vaapi":
@@ -92,6 +95,8 @@ const transcode = (task: TranscodeTask): Promise<void> => {
             `-b:v ${preset.bitrate}`,
             `-maxrate ${bitrateNum * 1.5}k`,
             `-bufsize ${bitrateNum * 2}k`,
+            `-g ${segmentDuration * 30}`,
+            "-sc_threshold 0",
           ];
 
         default:
@@ -101,8 +106,11 @@ const transcode = (task: TranscodeTask): Promise<void> => {
             "-tune fastdecode",
             "-crf 23",
             `-b:v ${preset.bitrate}`,
-            `-maxrate ${preset.bitrate}`,
+            `-maxrate ${Math.round(bitrateNum * 1.3)}k`,
             `-bufsize ${bitrateNum * 2}k`,
+            `-g ${segmentDuration * 30}`,
+            "-sc_threshold 0",
+            "-keyint_min 30",
             `-threads ${threads}`,
           ];
       }

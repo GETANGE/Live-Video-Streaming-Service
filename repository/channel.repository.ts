@@ -243,6 +243,16 @@ export const getChannelVideos = async (
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
+      include: {
+        user: { select: { id: true, username: true, imageUrl: true } },
+        channel: {
+          select: {
+            id: true,
+            name: true,
+            owner: { select: { id: true, username: true, imageUrl: true } },
+          },
+        },
+      },
     }),
     prisma.video.count({ where: { channelId } }),
   ]);

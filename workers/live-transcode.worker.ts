@@ -5,7 +5,6 @@ import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 import { execSync } from "child_process";
 
-
 const LL_HLS_SETTINGS = {
   segmentDuration: 1,
   partDuration: 0.2,
@@ -15,9 +14,9 @@ const LL_HLS_SETTINGS = {
 
 const DEFAULT_QUALITIES: QualityPreset[] = [
   { name: "360p", width: 640, height: 360, bitrate: "800k", audioBitrate: "96k" },
-  { name: "720p", width: 1280, height: 720, bitrate: "2500k", audioBitrate: "128k" },
-  { name: "1080p", width: 1920, height: 1080, bitrate: "5000k", audioBitrate: "192k" },
-  { name: "2160", width: 3840, height: 2160, bitrate: "10000k", audioBitrate: "384k" },
+  { name: "720p", width: 1280, height: 720, bitrate: "3000k", audioBitrate: "128k" },
+  { name: "1080p", width: 1920, height: 1080, bitrate: "6000k", audioBitrate: "192k" },
+  { name: "2160", width: 3840, height: 2160, bitrate: "18000k", audioBitrate: "384k" },
 ];
 
 const detectHardwareAcceleration = (): "nvenc" | "vaapi" | "cpu" => {
@@ -70,9 +69,9 @@ const getEncoderOptions = (preset: QualityPreset): string[] => {
         "-preset ultrafast",
         "-tune zerolatency",
         `-b:v ${preset.bitrate}`,
-        `-maxrate ${preset.bitrate}`,
-        `-bufsize ${preset.bitrate}`,
-        "-threads 2",
+        `-maxrate ${Math.round(bitrateNum * 1.5)}k`,
+        `-bufsize ${bitrateNum * 2}k`,
+        "-threads 0",
       ];
   }
 };
